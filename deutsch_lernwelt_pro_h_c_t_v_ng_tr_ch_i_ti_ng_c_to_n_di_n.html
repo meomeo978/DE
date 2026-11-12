@@ -1,0 +1,2278 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deutsch Lernwelt Pro • Học Từ Vựng & Trò Chơi Tiếng Đức</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 45%, #fce7f3 100%);
+            min-height: 100vh;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.7); }
+            70% { transform: scale(1.04); box-shadow: 0 0 0 10px rgba(79, 70, 229, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+        }
+        .speaker-active {
+            animation: pulse-ring 1s infinite;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+        .animate-shake {
+            animation: shake 0.36s ease-in-out;
+        }
+
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.95) translateY(8px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .animate-pop {
+            animation: popIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* 3D Card Flip */
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+            transition: transform 0.55s cubic-bezier(0.4, 0.2, 0.2, 1);
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .rotate-y-180 { transform: rotateY(180deg); }
+
+        /* Highway Canvas */
+        #raceCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            touch-action: manipulation;
+        }
+
+        /* Mole Pop Animation */
+        @keyframes molePop {
+            0% { transform: translateY(65%); opacity: 0.2; }
+            100% { transform: translateY(0%); opacity: 1; }
+        }
+        .mole-up {
+            animation: molePop 0.22s ease-out forwards;
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.04); border-radius: 999px; }
+        ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.35); border-radius: 999px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.55); }
+    </style>
+</head>
+<body class="text-slate-800 antialiased selection:bg-indigo-200 selection:text-indigo-900">
+
+    <!-- Hidden Audio Element for TTS Streams -->
+    <audio id="ttsFallbackAudio" preload="none" referrerpolicy="no-referrer"></audio>
+
+    <!-- ========================================================= -->
+    <!-- STICKY HEADER & AUDIO ENGINE BAR                          -->
+    <!-- ========================================================= -->
+    <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm">
+        <div class="max-w-6xl mx-auto px-3 sm:px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+            <!-- Brand & Active Deck Info -->
+            <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-slate-900 via-red-600 to-amber-400 flex items-center justify-center text-white font-black text-base shadow-md shrink-0">
+                    DE
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 id="activeTopicTitle" class="font-extrabold text-base sm:text-lg tracking-tight text-slate-900 leading-none">
+                            Kleidung (Trang phục)
+                        </h1>
+                        <span id="activeWordCountBadge" class="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-[11px] font-extrabold">27 từ</span>
+                    </div>
+                    <p id="audioStatusText" class="text-[11px] text-emerald-600 font-semibold mt-1 flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span> Loa đa tầng + Từ điển Glosbe sẵn sàng
+                    </p>
+                </div>
+            </div>
+
+            <!-- Global Controls -->
+            <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <!-- OCR Photo Upload Trigger -->
+                <button onclick="openOcrModal()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-sm transition-all active:scale-95">
+                    <span>📸</span> <span>Chụp/Tải Ảnh Tạo Bài</span>
+                </button>
+
+                <!-- Speed Selector -->
+                <div class="flex items-center bg-slate-100 rounded-xl p-0.5 border border-slate-200">
+                    <button id="speedNormalBtn" onclick="setSpeechRate(0.95)" class="px-2 py-1 rounded-lg text-xs font-bold bg-slate-800 text-white transition-all">1.0x</button>
+                    <button id="speedSlowBtn" onclick="setSpeechRate(0.68)" class="px-2 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all">0.7x</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 8 Navigation Modes (4 Study Modes + 4 Games) -->
+        <nav class="max-w-6xl mx-auto px-3 sm:px-4 pb-2.5 pt-1 flex gap-1.5 overflow-x-auto">
+            <button onclick="switchTab('study')" id="tab-study" class="nav-tab shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-indigo-600 text-white shadow-sm">
+                <span>📚</span> Kho từ & Flashcards
+            </button>
+            <button onclick="switchTab('quiz')" id="tab-quiz" class="nav-tab shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-white text-slate-600 hover:bg-slate-50 border border-slate-200">
+                <span>⏱️</span> Trắc nghiệm
+            </button>
+            <button onclick="switchTab('fill')" id="tab-fill" class="nav-tab shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-white text-slate-600 hover:bg-slate-50 border border-slate-200">
+                <span>✍️</span> Điền từ
+            </button>
+            <button onclick="switchTab('dictation')" id="tab-dictation" class="nav-tab shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-white text-slate-600 hover:bg-slate-50 border border-slate-200">
+                <span>🎧</span> Nghe & Viết
+            </button>
+            <div class="w-px bg-slate-300 mx-0.5 shrink-0"></div>
+            <button onclick="switchTab('race')" id="tab-race" class="nav-tab shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-white text-slate-600 hover:bg-slate-50 border border-slate-200">
+                <span>🏎️</span> Đua xe
+            </button>
+            <button onclick="switchTab('mole')" id="tab-mole" class="nav-tab shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-white text-slate-600 hover:bg-slate-50 border border-slate-200">
+                <span>🐹</span> Đập chuột
+            </button>
+            <button onclick="switchTab('memory')" id="tab-memory" class="nav-tab shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-white text-slate-600 hover:bg-slate-50 border border-slate-200">
+                <span>🃏</span> Lật hình
+            </button>
+            <button onclick="switchTab('hangman')" id="tab-hangman" class="nav-tab shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-white text-slate-600 hover:bg-slate-50 border border-slate-200">
+                <span>🪢</span> Treo cổ
+            </button>
+        </nav>
+    </header>
+
+    <!-- ========================================================= -->
+    <!-- MAIN WORKSPACE                                            -->
+    <!-- ========================================================= -->
+    <main class="max-w-6xl mx-auto px-3 sm:px-4 py-5">
+
+        <!-- ===================================================== -->
+        <!-- TAB 1: KHO TỪ VỰNG & FLASHCARDS 3D                    -->
+        <!-- ===================================================== -->
+        <section id="section-study" class="space-y-4 animate-pop">
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                <!-- Legend -->
+                <div class="flex flex-wrap items-center gap-1.5 text-xs font-bold">
+                    <span class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200">der (Đực)</span>
+                    <span class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 border border-rose-200">die (Cái)</span>
+                    <span class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">das (Trung)</span>
+                    <span class="px-2.5 py-1 rounded-lg bg-purple-50 text-purple-700 border border-purple-200">Verb (Động từ)</span>
+                </div>
+
+                <!-- Filter & Mode Toggle -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <input type="text" id="studySearchInput" oninput="renderStudyList()" placeholder="🔍 Tìm từ Đức / Việt..." class="flex-1 sm:w-44 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500">
+
+                    <select id="genderFilter" onchange="renderStudyList()" class="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm font-bold text-slate-700 focus:outline-none">
+                        <option value="all">Tất cả từ</option>
+                        <option value="der">der (Đực)</option>
+                        <option value="die">die (Cái)</option>
+                        <option value="das">das (Trung)</option>
+                        <option value="verb">Verb (Động từ)</option>
+                    </select>
+
+                    <button onclick="toggleFlashcardView()" class="px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs sm:text-sm font-extrabold transition-all flex items-center gap-1.5">
+                        <span>🗂️</span> <span id="flashcardModeText">Thẻ lật 3D</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3D Flashcard Deck View -->
+            <div id="flashcardDeckContainer" class="hidden max-w-xl mx-auto py-2 space-y-4">
+                <div class="flex items-center justify-between text-xs font-bold text-slate-600 px-1">
+                    <span>Thẻ <span id="fcCurrentIndex">1</span> / <span id="fcTotalCount">27</span></span>
+                    <button onclick="shuffleFlashcards()" class="text-indigo-600 hover:text-indigo-800 flex items-center gap-1">🔀 Xáo trộn thẻ</button>
+                </div>
+
+                <div class="perspective-1000 w-full h-80 cursor-pointer" onclick="flipCurrentCard()">
+                    <div id="flashcardInner" class="relative w-full h-full transform-style-3d shadow-xl rounded-3xl">
+                        <!-- Front -->
+                        <div id="flashcardFront" class="absolute inset-0 backface-hidden bg-white rounded-3xl border-2 border-indigo-100 p-6 flex flex-col items-center justify-between text-center">
+                            <div class="w-full flex items-center justify-between">
+                                <span id="fcBadge" class="px-3 py-1 rounded-full text-xs font-extrabold bg-blue-100 text-blue-700">der • Giống đực</span>
+                                <div class="flex items-center gap-1.5">
+                                    <a id="fcGlosbeLink" href="https://vi.glosbe.com/de/vi/Gürtel" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="px-2.5 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 text-xs font-extrabold transition-colors">
+                                        📖 Glosbe ↗
+                                    </a>
+                                    <button onclick="event.stopPropagation(); speakCurrentFlashcard(this)" class="w-10 h-10 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-600 flex items-center justify-center transition-transform active:scale-90 text-lg" title="Nghe phát âm">
+                                        🔊
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="my-auto">
+                                <div id="fcEmoji" class="text-5xl mb-2">🪢</div>
+                                <h2 id="fcGerman" class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">der Gürtel</h2>
+                                <p id="fcGrammar" class="text-xs sm:text-sm text-slate-500 font-medium mt-1.5">Gür·tel &lt;Gürtel&gt;</p>
+                            </div>
+                            <p class="text-xs text-slate-400 font-semibold">👆 Chạm vào thẻ để lật xem nghĩa tiếng Việt</p>
+                        </div>
+
+                        <!-- Back -->
+                        <div class="absolute inset-0 backface-hidden rotate-y-180 bg-gradient-to-br from-indigo-600 to-purple-700 text-white rounded-3xl p-6 flex flex-col items-center justify-between text-center">
+                            <div class="w-full flex items-center justify-between">
+                                <span class="px-3 py-1 rounded-full text-xs font-bold bg-white/20">Nghĩa tiếng Việt</span>
+                                <button onclick="event.stopPropagation(); speakCurrentFlashcard(this)" class="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center text-lg">
+                                    🔊
+                                </button>
+                            </div>
+                            <div class="my-auto">
+                                <h3 id="fcVietnamese" class="text-3xl sm:text-4xl font-black tracking-tight">thắt lưng</h3>
+                                <p id="fcGermanBack" class="text-indigo-200 font-semibold mt-2 text-lg">der Gürtel</p>
+                            </div>
+                            <p class="text-xs text-indigo-200 font-medium">👆 Chạm lần nữa để quay lại mặt trước</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-center gap-3">
+                    <button onclick="prevFlashcard()" class="px-5 py-3 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 font-bold text-slate-700 shadow-sm active:scale-95">⬅️ Trước</button>
+                    <button onclick="speakCurrentFlashcard()" class="px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md active:scale-95 flex items-center gap-2">
+                        <span>🔊</span> Nghe lại
+                    </button>
+                    <button onclick="nextFlashcard()" class="px-5 py-3 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 font-bold text-slate-700 shadow-sm active:scale-95">Tiếp ➡️</button>
+                </div>
+            </div>
+
+            <!-- Vocabulary Cards Grid -->
+            <div id="vocabGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5"></div>
+        </section>
+
+        <!-- ===================================================== -->
+        <!-- TAB 2: TRẮC NGHIỆM TỐC ĐỘ (GIỚI HẠN THỜI GIAN)        -->
+        <!-- ===================================================== -->
+        <section id="section-quiz" class="hidden max-w-2xl mx-auto animate-pop">
+            <div id="quizSetup" class="bg-white rounded-3xl p-6 sm:p-8 shadow-lg border border-slate-200/80 space-y-6">
+                <div class="text-center space-y-2">
+                    <div class="w-16 h-16 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-3xl mx-auto shadow-inner">⏱️</div>
+                    <h2 class="text-2xl font-black text-slate-900">Trắc Nghiệm Tốc Độ (Đủ Trọn Bộ Từ)</h2>
+                    <p class="text-sm text-slate-500">Chạy xuyên suốt tất cả <span id="quizSetupCountLabel" class="font-bold text-indigo-600">27</span> từ vựng trong chủ đề!</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200/70">
+                        <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-2">Thời gian mỗi câu</label>
+                        <select id="quizTimeLimit" class="w-full p-2.5 rounded-xl bg-white border border-slate-200 font-bold text-slate-800 text-sm">
+                            <option value="20">20 giây (Thư giãn)</option>
+                            <option value="15" selected>15 giây (Tiêu chuẩn)</option>
+                            <option value="10">10 giây (Tốc độ cao ⚡)</option>
+                        </select>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200/70">
+                        <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-2">Chiều hỏi đáp</label>
+                        <select id="quizDirection" class="w-full p-2.5 rounded-xl bg-white border border-slate-200 font-bold text-slate-800 text-sm">
+                            <option value="mixed" selected>Trộn Đức ➔ Việt & Việt ➔ Đức</option>
+                            <option value="de-vi">Tiếng Đức ➔ Nghĩa Việt</option>
+                            <option value="vi-de">Nghĩa Việt ➔ Tiếng Đức</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button onclick="startQuiz()" class="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-extrabold text-base shadow-lg transition-all active:scale-[0.98]">
+                    🚀 Bắt đầu trắc nghiệm toàn bộ từ
+                </button>
+            </div>
+
+            <div id="quizActive" class="hidden space-y-4">
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 space-y-3">
+                    <div class="flex items-center justify-between text-xs sm:text-sm font-extrabold">
+                        <span class="px-3 py-1 rounded-xl bg-indigo-50 text-indigo-700">Câu <span id="qIndexDisplay">1</span>/<span id="qTotalDisplay">27</span></span>
+                        <div class="flex items-center gap-3">
+                            <span class="text-amber-600">🔥 Chuỗi: <span id="qStreakDisplay">0</span></span>
+                            <span class="text-emerald-600">⭐ Điểm: <span id="qScoreDisplay">0</span></span>
+                        </div>
+                    </div>
+                    <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200/60">
+                        <div id="qTimerBar" class="h-full bg-emerald-500 rounded-full transition-all duration-100" style="width: 100%"></div>
+                    </div>
+                    <div class="flex justify-between items-center text-xs font-bold text-slate-500">
+                        <span>Thời gian còn lại:</span>
+                        <span id="qTimeText" class="text-rose-600 font-extrabold text-sm">15.0s</span>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-3xl p-6 sm:p-7 shadow-lg border border-slate-200/80 text-center space-y-4">
+                    <span id="qPromptLabel" class="inline-block px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-extrabold uppercase">
+                        Nghe & Chọn nghĩa đúng
+                    </span>
+                    <div class="flex flex-wrap items-center justify-center gap-3">
+                        <h3 id="qWordDisplay" class="text-3xl sm:text-4xl font-black text-slate-900">der Gürtel</h3>
+                        <button id="qSpeakerBtn" onclick="speakCurrentQuizWord(this)" class="w-11 h-11 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center shadow-md text-lg">
+                            🔊
+                        </button>
+                        <a id="qGlosbeLink" href="https://vi.glosbe.com/de/vi/Gürtel" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-teal-50 text-teal-700 border border-teal-200 text-xs font-extrabold">
+                            📖 Glosbe ↗
+                        </a>
+                    </div>
+                    <p id="qSubHint" class="text-xs text-slate-400 font-medium"></p>
+                </div>
+
+                <div id="qOptionsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+                <div id="qFeedbackBanner" class="hidden rounded-2xl p-4 text-center font-bold text-sm"></div>
+            </div>
+
+            <div id="quizResult" class="hidden bg-white rounded-3xl p-6 sm:p-8 shadow-lg border border-slate-200/80 text-center space-y-6 animate-pop">
+                <div class="text-5xl">🏆</div>
+                <h2 class="text-2xl sm:text-3xl font-black text-slate-900">Hoàn thành bài trắc nghiệm!</h2>
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="bg-indigo-50 p-4 rounded-2xl border border-indigo-100">
+                        <span class="text-xs font-bold text-indigo-500 uppercase">Tổng điểm</span>
+                        <p id="resScore" class="text-2xl font-black text-indigo-700 mt-1">0</p>
+                    </div>
+                    <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
+                        <span class="text-xs font-bold text-emerald-600 uppercase">Đúng</span>
+                        <p id="resCorrect" class="text-2xl font-black text-emerald-700 mt-1">0/27</p>
+                    </div>
+                    <div class="bg-amber-50 p-4 rounded-2xl border border-amber-100">
+                        <span class="text-xs font-bold text-amber-600 uppercase">Chuỗi max</span>
+                        <p id="resMaxStreak" class="text-2xl font-black text-amber-700 mt-1">0</p>
+                    </div>
+                </div>
+                <div id="resWrongContainer" class="hidden text-left space-y-2">
+                    <h3 class="text-xs font-extrabold uppercase text-rose-600">📌 Các từ cần nghe & ôn lại:</h3>
+                    <div id="resWrongList" class="max-h-48 overflow-y-auto space-y-2 pr-1"></div>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <button onclick="resetQuizToSetup()" class="flex-1 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold">⚙️ Cài đặt lại</button>
+                    <button onclick="startQuiz()" class="flex-1 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold shadow-md">🔄 Làm lại trọn bộ</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================== -->
+        <!-- TAB 3: ĐIỀN TỪ LUYỆN NHỚ (FILL IN THE BLANK)          -->
+        <!-- ===================================================== -->
+        <section id="section-fill" class="hidden max-w-2xl mx-auto animate-pop space-y-4">
+            <div class="bg-white rounded-3xl p-5 sm:p-7 shadow-lg border border-slate-200/80 space-y-5">
+                <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                    <div class="flex items-center gap-2">
+                        <span class="px-3 py-1 rounded-xl bg-indigo-50 text-indigo-700 text-xs font-extrabold">
+                            Từ <span id="fillIndexDisplay">1</span> / <span id="fillTotalDisplay">27</span>
+                        </span>
+                        <span class="px-3 py-1 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-extrabold">
+                            ✅ Thuộc: <span id="fillMasteredCount">0</span>
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select id="fillModeSelect" onchange="renderFillQuestion()" class="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700">
+                            <option value="full">Gõ Mạo từ + Từ Đức</option>
+                            <option value="split">Chọn der/die/das + Gõ từ</option>
+                            <option value="cloze">Điền chữ cái khuyết</option>
+                        </select>
+                        <button onclick="shuffleFillDeck()" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold">🔀</button>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-br from-slate-50 to-indigo-50/70 rounded-2xl p-5 border border-indigo-100 text-center space-y-2.5">
+                    <div id="fillEmoji" class="text-4xl">🪢</div>
+                    <h3 id="fillVietnamesePrompt" class="text-2xl sm:text-3xl font-black text-slate-900">thắt lưng</h3>
+                    <p id="fillGrammarHint" class="text-xs text-slate-500 font-medium">Gür·tel &lt;Gürtel&gt;</p>
+                    <div class="flex items-center justify-center gap-2 pt-1">
+                        <button id="fillSpeakerBtn" onclick="speakCurrentFillWord(this)" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold flex items-center gap-1.5 shadow-sm">
+                            <span>🔊</span> Nghe phát âm
+                        </button>
+                        <a id="fillGlosbeLink" href="https://vi.glosbe.com/de/vi/Gürtel" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-teal-50 text-teal-700 border border-teal-200 text-xs font-extrabold">
+                            📖 Glosbe ↗
+                        </a>
+                    </div>
+                </div>
+
+                <div id="fillArticleSelector" class="hidden space-y-1.5">
+                    <label class="block text-xs font-extrabold text-slate-500 uppercase text-center">1. Chọn mạo từ / loại từ:</label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button type="button" onclick="selectFillArticle('der')" id="artBtn-der" class="art-pill py-2.5 rounded-xl border-2 border-blue-200 bg-blue-50/50 text-blue-700 font-black text-sm">der</button>
+                        <button type="button" onclick="selectFillArticle('die')" id="artBtn-die" class="art-pill py-2.5 rounded-xl border-2 border-rose-200 bg-rose-50/50 text-rose-700 font-black text-sm">die</button>
+                        <button type="button" onclick="selectFillArticle('das')" id="artBtn-das" class="art-pill py-2.5 rounded-xl border-2 border-emerald-200 bg-emerald-50/50 text-emerald-700 font-black text-sm">das</button>
+                        <button type="button" onclick="selectFillArticle('none')" id="artBtn-none" class="art-pill py-2.5 rounded-xl border-2 border-purple-200 bg-purple-50/50 text-purple-700 font-black text-xs">Không có</button>
+                    </div>
+                </div>
+
+                <div id="fillClozeMask" class="hidden text-center font-mono text-2xl font-black tracking-widest text-indigo-700 bg-indigo-50 py-2.5 rounded-xl border border-indigo-200"></div>
+
+                <div class="space-y-2.5">
+                    <input type="text" id="fillTextInput" autocomplete="off" autocorrect="off" spellcheck="false" onkeydown="if(event.key==='Enter') checkFillAnswer()" placeholder="Nhập từ tiếng Đức..." class="w-full px-4 py-3.5 rounded-2xl border-2 border-slate-300 focus:border-indigo-600 focus:outline-none text-center text-lg sm:text-xl font-extrabold text-slate-900">
+                    <div class="flex flex-wrap items-center justify-center gap-1.5">
+                        <span class="text-[11px] font-bold text-slate-400 mr-1">Ký tự Đức:</span>
+                        <button type="button" onclick="insertGermanChar('fillTextInput', 'ä')" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-indigo-100 font-extrabold text-sm">ä</button>
+                        <button type="button" onclick="insertGermanChar('fillTextInput', 'ö')" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-indigo-100 font-extrabold text-sm">ö</button>
+                        <button type="button" onclick="insertGermanChar('fillTextInput', 'ü')" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-indigo-100 font-extrabold text-sm">ü</button>
+                        <button type="button" onclick="insertGermanChar('fillTextInput', 'ß')" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-indigo-100 font-extrabold text-sm">ß</button>
+                        <button type="button" onclick="insertGermanChar('fillTextInput', 'Ä')" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-indigo-100 font-extrabold text-sm">Ä</button>
+                        <button type="button" onclick="insertGermanChar('fillTextInput', 'Ö')" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-indigo-100 font-extrabold text-sm">Ö</button>
+                        <button type="button" onclick="insertGermanChar('fillTextInput', 'Ü')" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-indigo-100 font-extrabold text-sm">Ü</button>
+                    </div>
+                </div>
+
+                <div id="fillFeedbackBox" class="hidden rounded-2xl p-4 text-center space-y-1"></div>
+
+                <div class="flex flex-wrap gap-2.5">
+                    <button type="button" onclick="giveFillHint()" class="px-4 py-3 rounded-2xl bg-amber-100 hover:bg-amber-200 text-amber-800 font-extrabold text-sm">💡 Gợi ý chữ</button>
+                    <button type="button" id="fillSubmitBtn" onclick="checkFillAnswer()" class="flex-1 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm shadow-md">Kiểm tra đáp án</button>
+                    <button type="button" onclick="nextFillWord()" class="px-4 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-sm">Bỏ qua ➡️</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================== -->
+        <!-- TAB 4: NGHE & VIẾT CHÍNH TẢ (DICTATION)               -->
+        <!-- ===================================================== -->
+        <section id="section-dictation" class="hidden max-w-2xl mx-auto animate-pop space-y-4">
+            <div class="bg-white rounded-3xl p-5 sm:p-7 shadow-lg border border-slate-200/80 space-y-5">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-black text-slate-900">🎧 Luyện Nghe & Viết Chính Tả</h2>
+                        <p class="text-xs text-slate-500">Bấm loa nghe phát âm tiếng Đức rồi gõ lại chính xác từ vựng</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-xl bg-indigo-50 text-indigo-700 text-xs font-extrabold">
+                        Từ <span id="dictIndexDisplay">1</span>/<span id="dictTotalDisplay">27</span>
+                    </span>
+                </div>
+
+                <div class="bg-gradient-to-br from-indigo-600 to-blue-700 text-white rounded-2xl p-6 text-center space-y-4 shadow-md">
+                    <p class="text-xs font-bold uppercase tracking-wider text-indigo-200">Bấm nút bên dưới để nghe từ tiếng Đức</p>
+                    <div class="flex flex-wrap items-center justify-center gap-3">
+                        <button id="dictNormalSpeakBtn" onclick="speakDictationWord(0.95, this)" class="px-6 py-3.5 rounded-2xl bg-white text-indigo-700 hover:bg-indigo-50 font-black text-base shadow-lg flex items-center gap-2 transition-transform active:scale-95">
+                            <span class="text-xl">🔊</span> Nghe chuẩn (1.0x)
+                        </button>
+                        <button id="dictSlowSpeakBtn" onclick="speakDictationWord(0.65, this)" class="px-5 py-3.5 rounded-2xl bg-indigo-500/50 hover:bg-indigo-500/70 text-white border border-white/30 font-extrabold text-sm flex items-center gap-2 transition-transform active:scale-95">
+                            <span>🐢</span> Nghe chậm (0.65x)
+                        </button>
+                    </div>
+                    <div class="flex items-center justify-center gap-3 pt-1">
+                        <button onclick="toggleDictationMeaningHint()" class="text-xs font-bold underline text-indigo-100 hover:text-white">
+                            👁️ Hiện/Ẩn gợi ý nghĩa tiếng Việt
+                        </button>
+                        <a id="dictGlosbeLink" href="https://vi.glosbe.com/de/vi/Gürtel" target="_blank" rel="noopener noreferrer" class="text-xs font-bold bg-white/15 px-2.5 py-1 rounded-lg hover:bg-white/25">
+                            📖 Nghe trên Glosbe ↗
+                        </a>
+                    </div>
+                    <div id="dictMeaningReveal" class="hidden text-lg font-black text-amber-300 bg-black/20 py-2 px-4 rounded-xl inline-block">
+                        thắt lưng
+                    </div>
+                </div>
+
+                <div class="space-y-2.5">
+                    <input type="text" id="dictTextInput" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter') checkDictationAnswer()" placeholder="Gõ lại từ bạn vừa nghe được..." class="w-full px-4 py-3.5 rounded-2xl border-2 border-slate-300 focus:border-indigo-600 focus:outline-none text-center text-lg sm:text-xl font-extrabold text-slate-900">
+                    <div class="flex flex-wrap items-center justify-center gap-1.5">
+                        <button type="button" onclick="insertGermanChar('dictTextInput', 'ä')" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-indigo-100 font-extrabold text-sm">ä</button>
+                        <button type="button" onclick="insertGermanChar('dictTextInput', 'ö')" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-indigo-100 font-extrabold text-sm">ö</button>
+                        <button type="button" onclick="insertGermanChar('dictTextInput', 'ü')" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-indigo-100 font-extrabold text-sm">ü</button>
+                        <button type="button" onclick="insertGermanChar('dictTextInput', 'ß')" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-indigo-100 font-extrabold text-sm">ß</button>
+                        <button type="button" onclick="insertGermanChar('dictTextInput', 'Ä')" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-indigo-100 font-extrabold text-sm">Ä</button>
+                        <button type="button" onclick="insertGermanChar('dictTextInput', 'Ö')" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-indigo-100 font-extrabold text-sm">Ö</button>
+                        <button type="button" onclick="insertGermanChar('dictTextInput', 'Ü')" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-indigo-100 font-extrabold text-sm">Ü</button>
+                    </div>
+                </div>
+
+                <div id="dictFeedbackBox" class="hidden rounded-2xl p-4 text-center"></div>
+
+                <div class="flex gap-2.5">
+                    <button type="button" id="dictSubmitBtn" onclick="checkDictationAnswer()" class="flex-1 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm shadow-md">Kiểm tra chính tả</button>
+                    <button type="button" onclick="nextDictationWord()" class="px-5 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-sm">Từ tiếp ➡️</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================== -->
+        <!-- TAB 5: GAME 1 - ĐUA XE CAO TỐC 3 LÀN                  -->
+        <!-- ===================================================== -->
+        <section id="section-race" class="hidden max-w-4xl mx-auto animate-pop space-y-4">
+            <div id="raceSetupCard" class="bg-white rounded-3xl p-6 sm:p-8 shadow-lg border border-slate-200/80 text-center space-y-5">
+                <div class="text-5xl">🏎️💨</div>
+                <div class="space-y-1.5">
+                    <h2 class="text-2xl sm:text-3xl font-black text-slate-900">Đua Xe Cao Tốc (Chạy Trọn Bộ <span id="raceSetupTotalWords">27</span> Từ)</h2>
+                    <p class="text-sm text-slate-500 max-w-lg mx-auto">
+                        Đua xuyên suốt toàn bộ danh sách từ vựng! Ngay cả khi va chạm chướng ngại vật, xe vẫn tiếp tục chạy hết tất cả các từ để bạn luyện đủ 100% kho từ.
+                    </p>
+                </div>
+                <div class="max-w-xs mx-auto bg-slate-50 p-4 rounded-2xl border border-slate-200 text-left">
+                    <label class="block text-xs font-extrabold uppercase text-slate-500 mb-1.5">Tốc độ xe đua</label>
+                    <select id="raceSpeedLevel" class="w-full p-2.5 rounded-xl bg-white border border-slate-200 font-bold text-sm">
+                        <option value="slow">Chậm rãi (Dễ đọc từ)</option>
+                        <option value="normal" selected>Tiêu chuẩn (Vừa phải)</option>
+                        <option value="fast">Cao tốc (Phản xạ nhanh 🔥)</option>
+                    </select>
+                </div>
+                <button onclick="startRaceGame()" class="px-8 py-4 rounded-2xl bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-700 hover:to-amber-600 text-white font-extrabold text-base shadow-lg transition-all active:scale-95">
+                    🏁 Xuất phát đường đua!
+                </button>
+            </div>
+
+            <!-- Active Race -->
+            <div id="racePlayContainer" class="hidden space-y-3">
+                <div class="bg-slate-900 text-white rounded-2xl p-3 sm:px-5 shadow-md flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="px-2.5 py-1 rounded-lg bg-slate-800 text-emerald-400 text-xs font-extrabold border border-slate-700">
+                            Chặng: <span id="raceCurrentNum">1</span> / <span id="raceTotalNum">27</span>
+                        </span>
+                        <span class="px-2.5 py-1 rounded-lg bg-slate-800 text-amber-400 text-xs font-extrabold border border-slate-700">
+                            🛣️ <span id="raceMetersDisplay">0</span> m
+                        </span>
+                    </div>
+
+                    <div class="flex-1 min-w-[140px] max-w-xs">
+                        <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
+                            <div id="raceProgressBar" class="h-full bg-gradient-to-r from-amber-400 to-emerald-400 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <span class="text-base font-black text-amber-400">⭐ <span id="raceScoreDisplay">0</span></span>
+                        <button onclick="quitRaceGame()" class="px-3 py-1 rounded-xl bg-slate-800 hover:bg-rose-600 text-xs font-bold">Thoát</button>
+                    </div>
+                </div>
+
+                <!-- Canvas -->
+                <div class="relative w-full h-52 sm:h-60 bg-slate-800 rounded-2xl overflow-hidden shadow-lg border-2 border-slate-700">
+                    <canvas id="raceCanvas"></canvas>
+                    <div id="raceFloatingAlert" class="pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full font-extrabold text-xs sm:text-sm shadow-lg opacity-0 transition-opacity duration-200 whitespace-nowrap"></div>
+                </div>
+
+                <!-- Question Deck -->
+                <div class="bg-white rounded-3xl p-4 sm:p-5 shadow-lg border border-slate-200 space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-indigo-50/80 p-3.5 rounded-2xl border border-indigo-100">
+                        <div class="flex items-center gap-3">
+                            <button id="raceSpeakerBtn" onclick="speakCurrentRaceWord(this)" class="w-12 h-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center shadow-md text-xl shrink-0">
+                                🔊
+                            </button>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span id="raceObstacleTag" class="text-[11px] font-extrabold uppercase text-rose-600">🚧 Rào chắn phía trước!</span>
+                                    <a id="raceGlosbeLink" href="https://vi.glosbe.com/de/vi/Gürtel" target="_blank" rel="noopener noreferrer" class="text-[11px] font-bold text-teal-700 hover:underline">📖 Glosbe ↗</a>
+                                </div>
+                                <h3 id="raceWordDisplay" class="text-xl sm:text-3xl font-black text-slate-900">der Gürtel</h3>
+                                <p id="raceGrammarHint" class="text-xs text-slate-500 font-medium"></p>
+                            </div>
+                        </div>
+                        <div class="sm:text-right">
+                            <span class="text-[11px] font-bold text-slate-500 block">Khoảng cách an toàn</span>
+                            <div class="w-full sm:w-32 h-2.5 bg-slate-200 rounded-full overflow-hidden mt-1">
+                                <div id="raceSafetyBar" class="h-full bg-emerald-500 rounded-full" style="width: 100%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="raceOptionsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+                </div>
+            </div>
+
+            <!-- Race Result -->
+            <div id="raceResultCard" class="hidden bg-white rounded-3xl p-6 sm:p-8 shadow-lg border border-slate-200 text-center space-y-5 animate-pop">
+                <div class="text-6xl">🏁🏆</div>
+                <h2 class="text-2xl sm:text-3xl font-black text-slate-900">Hoàn thành trọn vẹn đường đua!</h2>
+                <div class="grid grid-cols-3 gap-3 max-w-lg mx-auto">
+                    <div class="bg-amber-50 p-3.5 rounded-2xl border border-amber-100">
+                        <span class="text-[11px] font-bold text-amber-600 uppercase">Tổng điểm</span>
+                        <p id="raceEndScore" class="text-2xl font-black text-amber-700 mt-1">0</p>
+                    </div>
+                    <div class="bg-emerald-50 p-3.5 rounded-2xl border border-emerald-100">
+                        <span class="text-[11px] font-bold text-emerald-600 uppercase">Né thành công</span>
+                        <p id="raceEndPassed" class="text-2xl font-black text-emerald-700 mt-1">0/27</p>
+                    </div>
+                    <div class="bg-indigo-50 p-3.5 rounded-2xl border border-indigo-100">
+                        <span class="text-[11px] font-bold text-indigo-600 uppercase">Quãng đường</span>
+                        <p id="raceEndMeters" class="text-2xl font-black text-indigo-700 mt-1">0 m</p>
+                    </div>
+                </div>
+                <div id="raceCrashReviewBox" class="hidden max-w-lg mx-auto text-left space-y-2">
+                    <h3 class="text-xs font-extrabold uppercase text-rose-600">💥 Các từ bị va chạm (Bấm loa nghe lại):</h3>
+                    <div id="raceCrashReviewList" class="max-h-44 overflow-y-auto space-y-1.5"></div>
+                </div>
+                <button onclick="startRaceGame()" class="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 to-amber-500 text-white font-extrabold shadow-md">🏎️ Đua lại trọn bộ</button>
+            </div>
+        </section>
+
+        <!-- ===================================================== -->
+        <!-- TAB 6: GAME 2 - ĐẬP CHUỘT TỪ VỰNG (WHACK-A-MOLE)      -->
+        <!-- ===================================================== -->
+        <section id="section-mole" class="hidden max-w-3xl mx-auto animate-pop space-y-4">
+            <div class="bg-white rounded-3xl p-5 sm:p-7 shadow-lg border border-slate-200/80 space-y-5">
+                <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-black text-slate-900">🐹 Đập Chuột Từ Vựng</h2>
+                        <p class="text-xs text-slate-500">Nghe từ tiếng Đức và đập trúng chú chuột mang đúng nghĩa tiếng Việt qua đủ toàn bộ từ!</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="px-3 py-1 rounded-xl bg-amber-100 text-amber-800 font-extrabold text-xs">⭐ Điểm: <span id="moleScoreDisplay">0</span></span>
+                        <span class="px-3 py-1 rounded-xl bg-indigo-100 text-indigo-800 font-extrabold text-xs">Từ <span id="moleIndexDisplay">1</span>/<span id="moleTotalDisplay">27</span></span>
+                    </div>
+                </div>
+
+                <!-- Target Prompt -->
+                <div class="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <button id="moleSpeakerBtn" onclick="speakCurrentMoleWord(this)" class="w-12 h-12 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center shadow-md text-xl shrink-0">
+                            🔊
+                        </button>
+                        <div>
+                            <span class="text-[11px] font-extrabold uppercase text-amber-700">Mục tiêu cần tìm:</span>
+                            <h3 id="moleTargetWord" class="text-2xl sm:text-3xl font-black text-slate-900">der Gürtel</h3>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a id="moleGlosbeLink" href="https://vi.glosbe.com/de/vi/Gürtel" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-xl bg-white text-teal-700 border border-teal-200 text-xs font-extrabold">📖 Glosbe ↗</a>
+                        <button onclick="initMoleGame()" class="px-3 py-1.5 rounded-xl bg-slate-800 text-white text-xs font-bold">🔄 Chơi lại</button>
+                    </div>
+                </div>
+
+                <div id="moleStatusBanner" class="text-center text-sm font-extrabold text-indigo-700 min-h-[24px]">
+                    👆 Bấm vào chú chuột có nghĩa đúng!
+                </div>
+
+                <!-- 6 Mole Holes Grid -->
+                <div id="moleGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 bg-emerald-100/70 p-4 rounded-3xl border-2 border-emerald-300">
+                    <!-- Injected via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================== -->
+        <!-- TAB 7: GAME 3 - LẬT HÌNH TÌM CẶP (MEMORY MATCH)       -->
+        <!-- ===================================================== -->
+        <section id="section-memory" class="hidden max-w-4xl mx-auto animate-pop space-y-4">
+            <div class="bg-white rounded-3xl p-5 sm:p-7 shadow-lg border border-slate-200/80 space-y-5">
+                <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-black text-slate-900">🃏 Lật Hình Tìm Cặp (Đủ Toàn Bộ Từ)</h2>
+                        <p class="text-xs text-slate-500">Ghép cặp Từ tiếng Đức (có loa đọc) với Nghĩa tiếng Việt qua từng vòng cho đến hết kho từ</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="px-3 py-1 rounded-xl bg-indigo-100 text-indigo-800 font-extrabold text-xs">
+                            Vòng <span id="memRoundDisplay">1</span>/<span id="memTotalRoundsDisplay">5</span>
+                        </span>
+                        <span class="px-3 py-1 rounded-xl bg-emerald-100 text-emerald-800 font-extrabold text-xs">
+                            Đã ghép: <span id="memMatchedTotal">0</span>/<span id="memDeckTotal">27</span>
+                        </span>
+                        <button onclick="initMemoryGame()" class="px-3 py-1.5 rounded-xl bg-slate-800 text-white text-xs font-bold">🔄 Chơi lại</button>
+                    </div>
+                </div>
+
+                <div id="memoryBoard" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    <!-- Cards injected via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================== -->
+        <!-- TAB 8: GAME 4 - TREO CỔ ĐOÁN CHỮ (HANGMAN)            -->
+        <!-- ===================================================== -->
+        <section id="section-hangman" class="hidden max-w-3xl mx-auto animate-pop space-y-4">
+            <div class="bg-white rounded-3xl p-5 sm:p-7 shadow-lg border border-slate-200/80 space-y-5">
+                <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-black text-slate-900">🪢 Treo Cổ Đoán Chữ Tiếng Đức</h2>
+                        <p class="text-xs text-slate-500">Nghe loa phát âm và đoán từng chữ cái (gồm cả ä, ö, ü, ß) qua toàn bộ bộ từ!</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="px-3 py-1 rounded-xl bg-indigo-100 text-indigo-800 font-extrabold text-xs">Từ <span id="hangIndexDisplay">1</span>/<span id="hangTotalDisplay">27</span></span>
+                        <span class="px-3 py-1 rounded-xl bg-amber-100 text-amber-800 font-extrabold text-xs">⭐ <span id="hangScoreDisplay">0</span></span>
+                    </div>
+                </div>
+
+                <!-- Hangman Stage + Word Slots -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200">
+                    <!-- SVG Gallows -->
+                    <div class="flex flex-col items-center justify-center bg-white p-3 rounded-2xl border border-slate-200">
+                        <svg width="130" height="140" viewBox="0 0 130 140" class="stroke-slate-800" fill="none" stroke-width="3.5" stroke-linecap="round">
+                            <line x1="15" y1="130" x2="85" y2="130" />
+                            <line x1="35" y1="130" x2="35" y2="15" />
+                            <line x1="35" y1="15" x2="90" y2="15" />
+                            <line x1="90" y1="15" x2="90" y2="30" />
+                            <circle id="hm-part-0" cx="90" cy="42" r="12" class="hidden stroke-rose-600" />
+                            <line id="hm-part-1" x1="90" y1="54" x2="90" y2="88" class="hidden stroke-rose-600" />
+                            <line id="hm-part-2" x1="90" y1="64" x2="72" y2="78" class="hidden stroke-rose-600" />
+                            <line id="hm-part-3" x1="90" y1="64" x2="108" y2="78" class="hidden stroke-rose-600" />
+                            <line id="hm-part-4" x1="90" y1="88" x2="75" y2="112" class="hidden stroke-rose-600" />
+                            <line id="hm-part-5" x1="90" y1="88" x2="105" y2="112" class="hidden stroke-rose-600" />
+                        </svg>
+                        <span class="text-xs font-extrabold text-slate-600 mt-1">Lượt đoán còn lại: <span id="hangLivesLeft" class="text-rose-600">6</span>/6</span>
+                    </div>
+
+                    <!-- Prompt & Letter Blanks -->
+                    <div class="md:col-span-2 text-center space-y-3">
+                        <div class="flex flex-wrap items-center justify-center gap-2">
+                            <button id="hangSpeakerBtn" onclick="speakCurrentHangWord(this)" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold flex items-center gap-1.5 shadow-sm">
+                                <span>🔊</span> Nghe phát âm từ này
+                            </button>
+                            <a id="hangGlosbeLink" href="https://vi.glosbe.com/de/vi/Gürtel" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-teal-50 text-teal-700 border border-teal-200 text-xs font-bold">
+                                📖 Glosbe ↗
+                            </a>
+                        </div>
+
+                        <div class="bg-white p-3 rounded-xl border border-slate-200">
+                            <span class="text-[11px] font-bold uppercase text-slate-400">Gợi ý nghĩa tiếng Việt:</span>
+                            <h3 id="hangMeaningHint" class="text-xl sm:text-2xl font-black text-indigo-700">thắt lưng</h3>
+                        </div>
+
+                        <!-- Masked Word Display -->
+                        <div id="hangWordSlots" class="flex flex-wrap items-center justify-center gap-1.5 pt-1 font-mono text-xl sm:text-2xl font-black"></div>
+                    </div>
+                </div>
+
+                <!-- Status & Next Button -->
+                <div id="hangStatusBanner" class="hidden rounded-2xl p-3.5 text-center font-extrabold text-sm"></div>
+
+                <!-- Full German Virtual Keyboard -->
+                <div id="hangKeyboard" class="flex flex-wrap justify-center gap-1.5"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ========================================================= -->
+    <!-- MODAL: CHỤP / TẢI ẢNH OCR TỰ SINH BÀI HỌC MỚI             -->
+    <!-- ========================================================= -->
+    <div id="ocrModal" class="hidden fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 my-auto animate-pop">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div>
+                    <h2 class="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
+                        <span>📸</span> Chụp / Tải Ảnh Tài Liệu Tự Tạo Bài Học
+                    </h2>
+                    <p class="text-xs text-slate-500">Hỗ trợ quét ảnh sách/vở tiếng Đức bằng OCR hoặc dán nhanh danh sách từ mới</p>
+                </div>
+                <button onclick="closeOcrModal()" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 font-bold text-slate-600">✕</button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label class="cursor-pointer flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed border-indigo-300 bg-indigo-50/50 hover:bg-indigo-50 text-center transition-all">
+                    <span class="text-2xl mb-1">🖼️</span>
+                    <span class="text-xs font-extrabold text-indigo-700">Chọn ảnh từ thư viện</span>
+                    <span class="text-[11px] text-slate-500 mt-0.5">JPG, PNG, WEBP</span>
+                    <input type="file" accept="image/*" onchange="handleImageUpload(event)" class="hidden">
+                </label>
+
+                <label class="cursor-pointer flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed border-emerald-300 bg-emerald-50/50 hover:bg-emerald-50 text-center transition-all">
+                    <span class="text-2xl mb-1">📷</span>
+                    <span class="text-xs font-extrabold text-emerald-700">Chụp trực tiếp bằng Camera</span>
+                    <span class="text-[11px] text-slate-500 mt-0.5">Mở camera điện thoại/máy tính</span>
+                    <input type="file" accept="image/*" capture="environment" onchange="handleImageUpload(event)" class="hidden">
+                </label>
+            </div>
+
+            <div id="ocrProgressBox" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-3.5 space-y-1.5">
+                <div class="flex justify-between text-xs font-extrabold text-amber-900">
+                    <span id="ocrStatusLabel">Đang quét chữ từ ảnh...</span>
+                    <span id="ocrPercentLabel">0%</span>
+                </div>
+                <div class="w-full h-2 bg-amber-200 rounded-full overflow-hidden">
+                    <div id="ocrProgressBar" class="h-full bg-amber-600 rounded-full transition-all" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="space-y-2.5">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Tên chủ đề bài học:</label>
+                    <input type="text" id="ocrTopicInput" value="Bài học mới từ ảnh" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm font-bold text-slate-800">
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="text-xs font-bold text-slate-600">Danh sách từ vựng (Mỗi dòng: <code class="bg-slate-100 px-1 rounded">Từ tiếng Đức - Nghĩa tiếng Việt</code>):</label>
+                        <button type="button" onclick="restoreDefaultKleidung()" class="text-[11px] font-extrabold text-indigo-600 hover:underline">↩️ Khôi phục 27 từ Kleidung</button>
+                    </div>
+                    <textarea id="ocrTextEditor" rows="6" placeholder="Ví dụ:&#10;der Tisch - cái bàn&#10;die Lampe - cái đèn&#10;das Buch - quyển sách" class="w-full p-3 rounded-2xl border border-slate-300 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-2.5 pt-1">
+                <button onclick="closeOcrModal()" class="px-4 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm">Đóng</button>
+                <button onclick="applyParsedVocab()" class="flex-1 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm shadow-md">
+                    ✨ Áp dụng & Tạo toàn bộ Trò chơi + Bài tập
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- JAVASCRIPT APPLICATION ENGINE (CLEAN, ZERO DUPLICATES)    -->
+    <!-- ========================================================= -->
+    <script>
+        // ==========================================
+        // 1. DỮ LIỆU 27 TỪ VỰNG CHỦ ĐỀ KLEIDUNG + CẤU HÌNH
+        // ==========================================
+        const DEFAULT_KLEIDUNG_DATA = [
+            { id: 1, article: 'der', word: 'Gürtel', full: 'der Gürtel', grammar: 'Gür·tel <Gürtel>', vi: 'thắt lưng', type: 'der', emoji: '🪢' },
+            { id: 2, article: 'der', word: 'Schuh', full: 'der Schuh', grammar: 'Schuh <Schuhe>', vi: '1 chiếc giày', type: 'der', emoji: '👞' },
+            { id: 3, article: 'der', word: 'Stiefel', full: 'der Stiefel', grammar: 'Stie·fel <Stiefel>', vi: 'đôi bốt', type: 'der', emoji: '👢' },
+            { id: 4, article: 'der', word: 'Strumpf', full: 'der Strumpf', grammar: 'Strumpf <Strümpfe>', vi: 'tất cao cổ', type: 'der', emoji: '🧦' },
+            { id: 5, article: 'das', word: 'Unterhemd', full: 'das Unterhemd', grammar: 'Un·ter·hemd <Unterhemden>', vi: 'áo trong', type: 'das', emoji: '🎽' },
+            { id: 6, article: 'die', word: 'Unterhose', full: 'die Unterhose', grammar: 'Un·ter·ho·se <Unterhosen>', vi: 'quần trong', type: 'die', emoji: '🩲' },
+            { id: 7, article: 'der', word: 'Unterrock', full: 'der Unterrock', grammar: 'Un·ter·rock <Unterröcke>', vi: 'váy trong', type: 'der', emoji: '👗' },
+            { id: 8, article: '', word: 'sich ausziehen', full: 'sich ausziehen', grammar: 'zieht sich aus, zog sich aus, hat sich ausgezogen', vi: 'cởi ra', type: 'verb', emoji: '👕' },
+            { id: 9, article: '', word: 'sich anziehen', full: 'sich anziehen', grammar: 'zieht sich an, zog sich an, hat sich angezogen', vi: 'mặc vào', type: 'verb', emoji: '🧥' },
+            { id: 10, article: 'der', word: 'Pullover', full: 'der Pullover', grammar: 'Pul·lo·ver <Pullover>', vi: 'áo len chui đầu', type: 'der', emoji: '🧶' },
+            { id: 11, article: 'die', word: 'Weste', full: 'die Weste', grammar: 'Wes·te <Westen>', vi: 'áo ghi lê', type: 'die', emoji: '🦺' },
+            { id: 12, article: 'das', word: 'T-Shirt', full: 'das T-Shirt', grammar: 'T-Shirt <T-Shirts>', vi: 'áo phông', type: 'das', emoji: '👕' },
+            { id: 13, article: 'die', word: 'Jeans', full: 'die Jeans', grammar: 'Jeans <Jeans>', vi: 'quần bò', type: 'die', emoji: '👖' },
+            { id: 14, article: 'die', word: 'Jacke', full: 'die Jacke', grammar: 'Ja·cke <Jacken>', vi: 'áo khoác', type: 'die', emoji: '🧥' },
+            { id: 15, article: 'der', word: 'Mantel', full: 'der Mantel', grammar: 'Man·tel <Mäntel>', vi: 'áo choàng dài', type: 'der', emoji: '🧥' },
+            { id: 16, article: 'die', word: 'Mütze', full: 'die Mütze', grammar: 'Müt·ze <Mützen>', vi: 'mũ len', type: 'die', emoji: '🧢' },
+            { id: 17, article: 'der', word: 'Handschuh', full: 'der Handschuh', grammar: 'Hand·schuh <Handschuhe>', vi: 'găng tay', type: 'der', emoji: '🧤' },
+            { id: 18, article: 'der', word: 'Schal', full: 'der Schal', grammar: 'Schal <Schals, Schale>', vi: 'khăn choàng', type: 'der', emoji: '🧣' },
+            { id: 19, article: 'die', word: 'Kleidung', full: 'die Kleidung', grammar: 'Klei·dung (Nomen)', vi: 'quần áo', type: 'die', emoji: '👚' },
+            { id: 20, article: 'die', word: 'Hose', full: 'die Hose', grammar: 'Ho·se <Hosen>', vi: 'quần dài', type: 'die', emoji: '👖' },
+            { id: 21, article: 'der', word: 'Rock', full: 'der Rock', grammar: 'Rock <Röcke>', vi: 'chân váy', type: 'der', emoji: ' skirts' },
+            { id: 22, article: 'das', word: 'Kleid', full: 'das Kleid', grammar: 'Kleid <Kleider>', vi: 'váy liền', type: 'das', emoji: '👗' },
+            { id: 23, article: 'die', word: 'Bluse', full: 'die Bluse', grammar: 'Blu·se <Blusen>', vi: 'áo sơ mi nữ', type: 'die', emoji: '👚' },
+            { id: 24, article: 'das', word: 'Hemd', full: 'das Hemd', grammar: 'Hemd <Hemden>', vi: 'áo sơ mi nam', type: 'das', emoji: '👔' },
+            { id: 25, article: 'der', word: 'Anzug', full: 'der Anzug', grammar: 'An·zug <Anzüge>', vi: 'bộ vest', type: 'der', emoji: '🤵' },
+            { id: 26, article: 'die', word: 'Krawatte', full: 'die Krawatte', grammar: 'Kra·wat·te <Krawatten>', vi: 'cà vạt', type: 'die', emoji: '👔' },
+            { id: 27, article: 'das', word: 'Kostüm', full: 'das Kostüm', grammar: 'Kos·tüm <Kostüme>', vi: 'đồ bộ nữ', type: 'das', emoji: '套' }
+        ].map(item => {
+            if (item.id === 21) item.emoji = '🩰';
+            if (item.id === 27) item.emoji = '👩‍💼';
+            return item;
+        });
+
+        let VOCAB_DATA = [...DEFAULT_KLEIDUNG_DATA];
+
+        const TYPE_STYLES = {
+            der: { label: 'der • Giống đực', badge: 'bg-blue-50 text-blue-700 border-blue-200', articleText: 'text-blue-600', cardBorder: 'border-blue-100 hover:border-blue-300' },
+            die: { label: 'die • Giống cái', badge: 'bg-rose-50 text-rose-700 border-rose-200', articleText: 'text-rose-600', cardBorder: 'border-rose-100 hover:border-rose-300' },
+            das: { label: 'das • Giống trung', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', articleText: 'text-emerald-600', cardBorder: 'border-emerald-100 hover:border-emerald-300' },
+            verb: { label: 'Verb • Động từ', badge: 'bg-purple-50 text-purple-700 border-purple-200', articleText: 'text-purple-600', cardBorder: 'border-purple-100 hover:border-purple-300' }
+        };
+
+        function getGlosbeUrl(item) {
+            const queryWord = item.word || item.full;
+            return `https://vi.glosbe.com/de/vi/${encodeURIComponent(queryWord)}`;
+        }
+
+        function shuffleArray(arr) {
+            const copy = [...arr];
+            for (let i = copy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copy[i], copy[j]] = [copy[j], copy[i]];
+            }
+            return copy;
+        }
+
+        // ==========================================
+        // 2. HỆ THỐNG ÂM THANH TRỰC TIẾP (BẤM LÀ ĐỌC NGAY)
+        // ==========================================
+        let speechRate = 0.95;
+        let autoSpeak = true;
+        let audioCtx = null;
+
+        function initAudioContext() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) audioCtx = new AudioContext();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function speakGerman(text, btnElement = null, customRate = null) {
+            initAudioContext();
+            const cleanText = text.trim();
+            const rateToUse = customRate || speechRate;
+            const statusText = document.getElementById('audioStatusText');
+
+            if (btnElement) btnElement.classList.add('speaker-active');
+            if (statusText) {
+                statusText.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span> Đang phát tiếng: <b>"${cleanText}"</b>`;
+            }
+
+            // 1. Gọi đồng thời bộ đọc giọng nói gốc của trình duyệt/điện thoại (luôn vượt qua tường lửa iframe)
+            if ('speechSynthesis' in window) {
+                try {
+                    window.speechSynthesis.cancel();
+                    const utter = new SpeechSynthesisUtterance(cleanText);
+                    utter.lang = 'de-DE';
+                    utter.rate = rateToUse;
+                    utter.volume = 1.0;
+                    const voices = window.speechSynthesis.getVoices();
+                    const deVoice = voices.find(v => v.lang.toLowerCase().includes('de')) || voices[0];
+                    if (deVoice) utter.voice = deVoice;
+                    utter.onend = () => { if (btnElement) btnElement.classList.remove('speaker-active'); };
+                    window.speechSynthesis.speak(utter);
+                } catch (e) {}
+            }
+
+            // 2. Kéo file MP3 tiếng Đức qua CORS proxy thành Blob cục bộ để khung xem trước không thể chặn
+            const ttsUrl = `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=de&q=${encodeURIComponent(cleanText)}`;
+            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(ttsUrl)}`;
+
+            fetch(proxyUrl)
+                .then(res => {
+                    if (!res.ok) throw new Error('Proxy failed');
+                    return res.blob();
+                })
+                .then(blob => {
+                    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                    const blobUrl = URL.createObjectURL(blob);
+                    const player = document.getElementById('ttsFallbackAudio');
+                    player.pause();
+                    player.src = blobUrl;
+                    player.playbackRate = rateToUse < 0.8 ? 0.78 : 1.0;
+                    player.onended = () => {
+                        URL.revokeObjectURL(blobUrl);
+                        if (btnElement) btnElement.classList.remove('speaker-active');
+                    };
+                    return player.play();
+                })
+                .catch(() => {
+                    if (btnElement) setTimeout(() => btnElement.classList.remove('speaker-active'), 900);
+                });
+        }
+
+        function setSpeechRate(rate) {
+            speechRate = rate;
+            document.getElementById('speedNormalBtn').className = rate === 0.95
+                ? 'px-2 py-1 rounded-lg text-xs font-bold bg-slate-800 text-white transition-all'
+                : 'px-2 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all';
+            document.getElementById('speedSlowBtn').className = rate !== 0.95
+                ? 'px-2 py-1 rounded-lg text-xs font-bold bg-slate-800 text-white transition-all'
+                : 'px-2 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all';
+        }
+
+        function playSoundEffect(type) {
+            try {
+                initAudioContext();
+                if (!audioCtx) return;
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'correct' || type === 'chime') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.14);
+                    gain.gain.setValueAtTime(0.16, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(190, now);
+                    osc.frequency.linearRampToValueAtTime(110, now + 0.28);
+                    gain.gain.setValueAtTime(0.16, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'win') {
+                    [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.type = 'triangle';
+                        o.frequency.setValueAtTime(freq, now + i * 0.09);
+                        g.gain.setValueAtTime(0.14, now + i * 0.09);
+                        g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.09 + 0.35);
+                        o.connect(g);
+                        g.connect(audioCtx.destination);
+                        o.start(now + i * 0.09);
+                        o.stop(now + i * 0.09 + 0.35);
+                    });
+                }
+            } catch (e) {}
+        }
+
+        // ==========================================
+        // 3. TÍNH NĂNG CHỤP / TẢI ẢNH OCR TỰ SINH BÀI HỌC
+        // ==========================================
+        function openOcrModal() {
+            const editor = document.getElementById('ocrTextEditor');
+            if (!editor.value.trim()) {
+                editor.value = VOCAB_DATA.map(w => `${w.full} - ${w.vi}`).join('\n');
+            }
+            document.getElementById('ocrModal').classList.remove('hidden');
+        }
+
+        function closeOcrModal() {
+            document.getElementById('ocrModal').classList.add('hidden');
+        }
+
+        async function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const progressBox = document.getElementById('ocrProgressBox');
+            const statusLabel = document.getElementById('ocrStatusLabel');
+            const percentLabel = document.getElementById('ocrPercentLabel');
+            const progressBar = document.getElementById('ocrProgressBar');
+
+            progressBox.classList.remove('hidden');
+            statusLabel.textContent = 'Đang nhận diện chữ tiếng Đức & tiếng Việt từ ảnh...';
+            percentLabel.textContent = '5%';
+            progressBar.style.width = '5%';
+
+            try {
+                const worker = await Tesseract.createWorker('deu+vie', 1, {
+                    logger: m => {
+                        if (m.status === 'recognizing text') {
+                            const pct = Math.round(m.progress * 100);
+                            percentLabel.textContent = `${pct}%`;
+                            progressBar.style.width = `${pct}%`;
+                        }
+                    }
+                });
+
+                const { data: { text } } = await worker.recognize(file);
+                await worker.terminate();
+
+                statusLabel.textContent = '✅ Quét xong! Kiểm tra/chỉnh sửa nhẹ bên dưới rồi bấm Áp dụng.';
+                percentLabel.textContent = '100%';
+                progressBar.style.width = '100%';
+
+                const cleanedLines = autoFormatOcrText(text);
+                document.getElementById('ocrTextEditor').value = cleanedLines || text;
+            } catch (err) {
+                statusLabel.textContent = '⚠️ Không thể quét tự động ảnh này. Bạn có thể nhập nhanh danh sách từ bên dưới!';
+            }
+        }
+
+        function autoFormatOcrText(rawText) {
+            const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 2);
+            const pairs = [];
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                if (line.includes('-') || line.includes(':')) {
+                    pairs.push(line.replace(':', ' - '));
+                } else if (/^(der|die|das|sich)\s+/i.test(line) && lines[i + 1]) {
+                    pairs.push(`${line} - ${lines[i + 1]}`);
+                    i++;
+                }
+            }
+            return pairs.join('\n');
+        }
+
+        function restoreDefaultKleidung() {
+            document.getElementById('ocrTopicInput').value = 'Kleidung (Trang phục)';
+            document.getElementById('ocrTextEditor').value = DEFAULT_KLEIDUNG_DATA.map(w => `${w.full} - ${w.vi}`).join('\n');
+        }
+
+        function applyParsedVocab() {
+            const topic = document.getElementById('ocrTopicInput').value.trim() || 'Chủ đề mới';
+            const rawLines = document.getElementById('ocrTextEditor').value.split('\n').map(l => l.trim()).filter(Boolean);
+
+            const parsed = [];
+            rawLines.forEach((line, idx) => {
+                const parts = line.split(/\s*[-–—:=]\s*/);
+                const deRaw = (parts[0] || '').trim();
+                const viRaw = (parts.slice(1).join(' - ') || 'Nghĩa tiếng Việt').trim();
+                if (!deRaw) return;
+
+                let article = '';
+                let word = deRaw;
+                let type = 'verb';
+
+                const matchArt = deRaw.match(/^(der|die|das)\s+(.+)$/i);
+                if (matchArt) {
+                    article = matchArt[1].toLowerCase();
+                    word = matchArt[2].trim();
+                    type = article;
+                }
+
+                parsed.push({
+                    id: idx + 1,
+                    article,
+                    word,
+                    full: article ? `${article} ${word}` : word,
+                    grammar: article ? `Danh từ (${article})` : 'Từ vựng / Động từ',
+                    vi: viRaw,
+                    type,
+                    emoji: type === 'der' ? '📘' : type === 'die' ? '📕' : type === 'das' ? '📗' : '⚡'
+                });
+            });
+
+            if (parsed.length < 4) {
+                playSoundEffect('wrong');
+                document.getElementById('ocrStatusLabel').textContent = '⚠️ Vui lòng nhập ít nhất 4 từ vựng để tạo đủ các trò chơi!';
+                document.getElementById('ocrProgressBox').classList.remove('hidden');
+                return;
+            }
+
+            VOCAB_DATA = parsed;
+            document.getElementById('activeTopicTitle').textContent = topic;
+            document.getElementById('activeWordCountBadge').textContent = `${VOCAB_DATA.length} từ`;
+            document.getElementById('quizSetupCountLabel').textContent = VOCAB_DATA.length;
+            document.getElementById('raceSetupTotalWords').textContent = VOCAB_DATA.length;
+
+            flashcardDeck = [...VOCAB_DATA];
+            currentFcIndex = 0;
+            fillDeck = [];
+            dictDeck = [];
+            renderStudyList();
+            closeOcrModal();
+            playSoundEffect('win');
+            switchTab('study');
+        }
+
+        // ==========================================
+        // 4. ĐIỀU HƯỚNG 8 CHẾ ĐỘ (4 HỌC + 4 GAME)
+        // ==========================================
+        function switchTab(tabName) {
+            if (tabName !== 'quiz' && quizTimerInterval) clearInterval(quizTimerInterval);
+            if (tabName !== 'race' && raceState.isRunning) {
+                raceState.isRunning = false;
+                if (raceAnimFrame) cancelAnimationFrame(raceAnimFrame);
+            }
+            if (tabName !== 'mole' && moleInterval) clearInterval(moleInterval);
+
+            const allTabs = ['study', 'quiz', 'fill', 'dictation', 'race', 'mole', 'memory', 'hangman'];
+            allTabs.forEach(t => {
+                const sec = document.getElementById(`section-${t}`);
+                const btn = document.getElementById(`tab-${t}`);
+                if (t === tabName) {
+                    sec.classList.remove('hidden');
+                    btn.className = 'nav-tab shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-indigo-600 text-white shadow-sm';
+                } else {
+                    sec.classList.add('hidden');
+                    btn.className = 'nav-tab shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-white text-slate-600 hover:bg-slate-50 border border-slate-200';
+                }
+            });
+
+            if (tabName === 'fill' && fillDeck.length === 0) initFillExercise();
+            if (tabName === 'dictation' && dictDeck.length === 0) initDictationExercise();
+            if (tabName === 'mole') initMoleGame();
+            if (tabName === 'memory') initMemoryGame();
+            if (tabName === 'hangman') initHangmanGame();
+        }
+
+        // ==========================================
+        // 5. TAB 1: KHO TỪ & FLASHCARDS 3D
+        // ==========================================
+        let isFlashcardMode = false;
+        let flashcardDeck = [...VOCAB_DATA];
+        let currentFcIndex = 0;
+
+        function renderStudyList() {
+            const filter = document.getElementById('genderFilter').value;
+            const search = document.getElementById('studySearchInput').value.trim().toLowerCase();
+            const grid = document.getElementById('vocabGrid');
+
+            const filtered = VOCAB_DATA.filter(item => {
+                const matchGender = filter === 'all' || item.type === filter;
+                const matchSearch = !search || item.full.toLowerCase().includes(search) || item.vi.toLowerCase().includes(search);
+                return matchGender && matchSearch;
+            });
+
+            flashcardDeck = filtered.length > 0 ? [...filtered] : [...VOCAB_DATA];
+            currentFcIndex = 0;
+            updateFlashcardUI();
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-10 text-slate-500 font-semibold">Không tìm thấy từ vựng phù hợp.</div>`;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(item => {
+                const style = TYPE_STYLES[item.type] || TYPE_STYLES.verb;
+                const titleHtml = item.article
+                    ? `<span class="${style.articleText} font-black">${item.article}</span> <span class="text-slate-900 font-black">${item.word}</span>`
+                    : `<span class="${style.articleText} font-black">${item.word}</span>`;
+
+                return `
+                    <div class="bg-white rounded-2xl p-4 border-2 ${style.cardBorder} shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-2.5">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="flex items-center gap-2.5">
+                                <span class="text-2xl bg-slate-50 w-10 h-10 rounded-xl flex items-center justify-center border border-slate-100 shrink-0">${item.emoji}</span>
+                                <div>
+                                    <span class="inline-block px-2 py-0.5 rounded-md text-[10px] font-extrabold border ${style.badge} mb-1">${style.label}</span>
+                                    <h3 class="text-lg leading-snug">${titleHtml}</h3>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <a href="${getGlosbeUrl(item)}" target="_blank" rel="noopener noreferrer" class="px-2 py-2 rounded-xl bg-teal-50 hover:bg-teal-600 text-teal-700 hover:text-white border border-teal-200 text-[11px] font-extrabold transition-colors" title="Nghe giọng bản ngữ trên từ điển Glosbe">
+                                    📖 Glosbe
+                                </a>
+                                <button onclick="speakGerman('${item.full.replace(/'/g, "\\'")}', this)" class="w-10 h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center shadow-sm text-base transition-transform active:scale-90" title="Nghe phát âm">
+                                    🔊
+                                </button>
+                            </div>
+                        </div>
+                        <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                            <span class="text-sm font-extrabold text-slate-800">${item.vi}</span>
+                            <span class="text-[11px] text-slate-400 font-medium text-right">${item.grammar}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleFlashcardView() {
+            isFlashcardMode = !isFlashcardMode;
+            document.getElementById('flashcardDeckContainer').classList.toggle('hidden', !isFlashcardMode);
+            document.getElementById('vocabGrid').classList.toggle('hidden', isFlashcardMode);
+            document.getElementById('flashcardModeText').textContent = isFlashcardMode ? 'Xem danh sách' : 'Thẻ lật 3D';
+            if (isFlashcardMode) updateFlashcardUI();
+        }
+
+        function updateFlashcardUI() {
+            if (!flashcardDeck.length) return;
+            const item = flashcardDeck[currentFcIndex];
+            const style = TYPE_STYLES[item.type] || TYPE_STYLES.verb;
+
+            document.getElementById('flashcardInner').classList.remove('rotate-y-180');
+            document.getElementById('fcCurrentIndex').textContent = currentFcIndex + 1;
+            document.getElementById('fcTotalCount').textContent = flashcardDeck.length;
+
+            const badge = document.getElementById('fcBadge');
+            badge.className = `px-3 py-1 rounded-full text-xs font-extrabold border ${style.badge}`;
+            badge.textContent = style.label;
+
+            document.getElementById('fcEmoji').textContent = item.emoji;
+            document.getElementById('fcGerman').textContent = item.full;
+            document.getElementById('fcGrammar').textContent = item.grammar;
+            document.getElementById('fcVietnamese').textContent = item.vi;
+            document.getElementById('fcGermanBack').textContent = item.full;
+            document.getElementById('fcGlosbeLink').href = getGlosbeUrl(item);
+        }
+
+        function flipCurrentCard() { document.getElementById('flashcardInner').classList.toggle('rotate-y-180'); }
+        function speakCurrentFlashcard(btn = null) { const item = flashcardDeck[currentFcIndex]; if (item) speakGerman(item.full, btn); }
+        function nextFlashcard() { currentFcIndex = (currentFcIndex + 1) % flashcardDeck.length; updateFlashcardUI(); if (autoSpeak) speakCurrentFlashcard(); }
+        function prevFlashcard() { currentFcIndex = (currentFcIndex - 1 + flashcardDeck.length) % flashcardDeck.length; updateFlashcardUI(); if (autoSpeak) speakCurrentFlashcard(); }
+        function shuffleFlashcards() { flashcardDeck = shuffleArray(flashcardDeck); currentFcIndex = 0; updateFlashcardUI(); }
+
+        // ==========================================
+        // 6. TAB 2: TRẮC NGHIỆM TỐC ĐỘ (FULL DECK)
+        // ==========================================
+        let quizQuestions = [];
+        let qIndex = 0, qScore = 0, qStreak = 0, qMaxStreak = 0, qCorrectCount = 0;
+        let qWrongItems = [], qTimeLimit = 15, qTimeLeft = 15, quizTimerInterval = null, qLocked = false;
+
+        function startQuiz() {
+            initAudioContext();
+            qTimeLimit = parseInt(document.getElementById('quizTimeLimit').value, 10);
+            const direction = document.getElementById('quizDirection').value;
+
+            quizQuestions = shuffleArray(VOCAB_DATA).map(wordObj => {
+                let mode = direction === 'mixed' ? (Math.random() < 0.55 ? 'de-vi' : 'vi-de') : direction;
+                const distractors = shuffleArray(VOCAB_DATA.filter(w => w.id !== wordObj.id)).slice(0, 3);
+                return { wordObj, mode, options: shuffleArray([wordObj, ...distractors]) };
+            });
+
+            qIndex = 0; qScore = 0; qStreak = 0; qMaxStreak = 0; qCorrectCount = 0; qWrongItems = [];
+            document.getElementById('quizSetup').classList.add('hidden');
+            document.getElementById('quizResult').classList.add('hidden');
+            document.getElementById('quizActive').classList.remove('hidden');
+            renderQuizQuestion();
+        }
+
+        function renderQuizQuestion() {
+            qLocked = false;
+            const { wordObj, mode, options } = quizQuestions[qIndex];
+            document.getElementById('qIndexDisplay').textContent = qIndex + 1;
+            document.getElementById('qTotalDisplay').textContent = quizQuestions.length;
+            document.getElementById('qStreakDisplay').textContent = qStreak;
+            document.getElementById('qScoreDisplay').textContent = qScore;
+            document.getElementById('qFeedbackBanner').classList.add('hidden');
+            document.getElementById('qGlosbeLink').href = getGlosbeUrl(wordObj);
+
+            const speakerBtn = document.getElementById('qSpeakerBtn');
+            if (mode === 'de-vi') {
+                document.getElementById('qPromptLabel').textContent = '🇩🇪 Nghe & Đọc tiếng Đức ➔ Chọn nghĩa tiếng Việt';
+                document.getElementById('qWordDisplay').textContent = wordObj.full;
+                document.getElementById('qSubHint').textContent = wordObj.grammar;
+                speakerBtn.classList.remove('hidden');
+                if (autoSpeak) setTimeout(() => speakGerman(wordObj.full, speakerBtn), 120);
+            } else {
+                document.getElementById('qPromptLabel').textContent = '🇻🇳 Nghĩa tiếng Việt ➔ Chọn đúng từ tiếng Đức';
+                document.getElementById('qWordDisplay').textContent = `${wordObj.emoji} ${wordObj.vi}`;
+                document.getElementById('qSubHint').textContent = 'Chú ý mạo từ der / die / das';
+                speakerBtn.classList.add('hidden');
+            }
+
+            document.getElementById('qOptionsGrid').innerHTML = options.map((opt, idx) => `
+                <button id="qOptBtn-${idx}" onclick="handleQuizAnswer(${idx})" class="p-4 rounded-2xl bg-white hover:bg-indigo-50 border-2 border-slate-200 hover:border-indigo-400 text-left font-bold text-slate-800 text-base transition-all flex items-center gap-3 shadow-sm">
+                    <span class="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 text-sm font-extrabold flex items-center justify-center shrink-0">${['A', 'B', 'C', 'D'][idx]}</span>
+                    <span>${mode === 'de-vi' ? opt.vi : opt.full}</span>
+                </button>
+            `).join('');
+
+            startQuizTimer();
+        }
+
+        function speakCurrentQuizWord(btn = null) {
+            if (quizQuestions[qIndex]) speakGerman(quizQuestions[qIndex].wordObj.full, btn);
+        }
+
+        function startQuizTimer() {
+            if (quizTimerInterval) clearInterval(quizTimerInterval);
+            qTimeLeft = qTimeLimit;
+            updateTimerVisuals();
+            quizTimerInterval = setInterval(() => {
+                qTimeLeft -= 0.1;
+                if (qTimeLeft <= 0) {
+                    qTimeLeft = 0;
+                    updateTimerVisuals();
+                    clearInterval(quizTimerInterval);
+                    handleQuizTimeout();
+                } else {
+                    updateTimerVisuals();
+                }
+            }, 100);
+        }
+
+        function updateTimerVisuals() {
+            const pct = Math.max(0, (qTimeLeft / qTimeLimit) * 100);
+            const bar = document.getElementById('qTimerBar');
+            const text = document.getElementById('qTimeText');
+            bar.style.width = `${pct}%`;
+            text.textContent = `${qTimeLeft.toFixed(1)}s`;
+            bar.className = pct > 50 ? 'h-full bg-emerald-500 rounded-full' : pct > 25 ? 'h-full bg-amber-500 rounded-full' : 'h-full bg-rose-500 rounded-full';
+        }
+
+        function handleQuizAnswer(selectedIdx) {
+            if (qLocked) return;
+            qLocked = true;
+            clearInterval(quizTimerInterval);
+
+            const currentQ = quizQuestions[qIndex];
+            const isCorrect = currentQ.options[selectedIdx].id === currentQ.wordObj.id;
+            const correctIdx = currentQ.options.findIndex(o => o.id === currentQ.wordObj.id);
+            const banner = document.getElementById('qFeedbackBanner');
+
+            speakGerman(currentQ.wordObj.full);
+
+            if (isCorrect) {
+                playSoundEffect('correct');
+                document.getElementById(`qOptBtn-${selectedIdx}`).className = 'p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-500 text-left font-bold text-emerald-900 flex items-center gap-3';
+                qStreak++;
+                if (qStreak > qMaxStreak) qMaxStreak = qStreak;
+                qCorrectCount++;
+                qScore += 100 + Math.round((qTimeLeft / qTimeLimit) * 50);
+                banner.className = 'rounded-2xl p-3.5 text-center font-bold text-sm bg-emerald-100 text-emerald-800 border border-emerald-200 animate-pop';
+                banner.innerHTML = `✅ Chính xác! <strong>${currentQ.wordObj.full}</strong> = ${currentQ.wordObj.vi}`;
+            } else {
+                playSoundEffect('wrong');
+                document.getElementById(`qOptBtn-${selectedIdx}`).className = 'p-4 rounded-2xl bg-rose-50 border-2 border-rose-500 text-left font-bold text-rose-900 flex items-center gap-3 animate-shake';
+                document.getElementById(`qOptBtn-${correctIdx}`).className = 'p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-500 text-left font-bold text-emerald-900 flex items-center gap-3';
+                qStreak = 0;
+                qWrongItems.push(currentQ.wordObj);
+                banner.className = 'rounded-2xl p-3.5 text-center font-bold text-sm bg-rose-100 text-rose-800 border border-rose-200 animate-pop';
+                banner.innerHTML = `❌ Chưa đúng! Đáp án: <strong>${currentQ.wordObj.full}</strong> (${currentQ.wordObj.vi})`;
+            }
+
+            banner.classList.remove('hidden');
+            document.getElementById('qScoreDisplay').textContent = qScore;
+            document.getElementById('qStreakDisplay').textContent = qStreak;
+
+            setTimeout(() => {
+                qIndex++;
+                if (qIndex < quizQuestions.length) renderQuizQuestion();
+                else finishQuiz();
+            }, 1350);
+        }
+
+        function handleQuizTimeout() {
+            if (qLocked) return;
+            qLocked = true;
+            playSoundEffect('wrong');
+            const currentQ = quizQuestions[qIndex];
+            const correctIdx = currentQ.options.findIndex(o => o.id === currentQ.wordObj.id);
+            document.getElementById(`qOptBtn-${correctIdx}`).className = 'p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-500 text-left font-bold text-emerald-900 flex items-center gap-3';
+            qStreak = 0;
+            qWrongItems.push(currentQ.wordObj);
+            speakGerman(currentQ.wordObj.full);
+
+            const banner = document.getElementById('qFeedbackBanner');
+            banner.className = 'rounded-2xl p-3.5 text-center font-bold text-sm bg-amber-100 text-amber-900 border border-amber-200';
+            banner.innerHTML = `⏰ Hết giờ! Đáp án đúng: <strong>${currentQ.wordObj.full}</strong> = ${currentQ.wordObj.vi}`;
+            banner.classList.remove('hidden');
+
+            setTimeout(() => {
+                qIndex++;
+                if (qIndex < quizQuestions.length) renderQuizQuestion();
+                else finishQuiz();
+            }, 1500);
+        }
+
+        function finishQuiz() {
+            playSoundEffect('win');
+            document.getElementById('quizActive').classList.add('hidden');
+            document.getElementById('quizResult').classList.remove('hidden');
+            document.getElementById('resScore').textContent = qScore;
+            document.getElementById('resCorrect').textContent = `${qCorrectCount}/${quizQuestions.length}`;
+            document.getElementById('resMaxStreak').textContent = qMaxStreak;
+
+            const wrongContainer = document.getElementById('resWrongContainer');
+            const wrongList = document.getElementById('resWrongList');
+            if (qWrongItems.length > 0) {
+                wrongContainer.classList.remove('hidden');
+                const unique = Array.from(new Map(qWrongItems.map(i => [i.id, i])).values());
+                wrongList.innerHTML = unique.map(item => `
+                    <div class="flex items-center justify-between p-3 rounded-xl bg-rose-50 border border-rose-200 text-sm">
+                        <div><strong>${item.full}</strong> — <span class="text-rose-700 font-bold">${item.vi}</span></div>
+                        <div class="flex gap-1.5">
+                            <a href="${getGlosbeUrl(item)}" target="_blank" rel="noopener noreferrer" class="px-2 py-1 rounded-lg bg-teal-50 text-teal-700 border border-teal-200 text-xs font-bold">📖</a>
+                            <button onclick="speakGerman('${item.full.replace(/'/g, "\\'")}', this)" class="px-2.5 py-1 rounded-lg bg-white text-indigo-600 border border-indigo-200 font-bold">🔊</button>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                wrongContainer.classList.add('hidden');
+            }
+        }
+
+        function resetQuizToSetup() {
+            if (quizTimerInterval) clearInterval(quizTimerInterval);
+            document.getElementById('quizActive').classList.add('hidden');
+            document.getElementById('quizResult').classList.add('hidden');
+            document.getElementById('quizSetup').classList.remove('hidden');
+        }
+
+        // ==========================================
+        // 7. TAB 3: ĐIỀN TỪ LUYỆN NHỚ (FULL DECK)
+        // ==========================================
+        let fillDeck = [], fillIndex = 0, fillMasteredIds = new Set(), selectedFillArticle = '', fillSolvedCurrent = false, fillHintStep = 0;
+
+        function initFillExercise() {
+            fillDeck = shuffleArray(VOCAB_DATA);
+            fillIndex = 0;
+            fillMasteredIds.clear();
+            renderFillQuestion();
+        }
+
+        function shuffleFillDeck() {
+            fillDeck = shuffleArray(VOCAB_DATA);
+            fillIndex = 0;
+            renderFillQuestion();
+        }
+
+        function selectFillArticle(art) {
+            selectedFillArticle = art;
+            document.querySelectorAll('.art-pill').forEach(b => b.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-100'));
+            const active = document.getElementById(`artBtn-${art}`);
+            if (active) active.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-100');
+            document.getElementById('fillTextInput').focus();
+        }
+
+        function renderFillQuestion() {
+            const item = fillDeck[fillIndex];
+            const mode = document.getElementById('fillModeSelect').value;
+            fillSolvedCurrent = false;
+            fillHintStep = 0;
+            selectedFillArticle = '';
+
+            document.getElementById('fillIndexDisplay').textContent = fillIndex + 1;
+            document.getElementById('fillTotalDisplay').textContent = fillDeck.length;
+            document.getElementById('fillMasteredCount').textContent = fillMasteredIds.size;
+            document.getElementById('fillEmoji').textContent = item.emoji;
+            document.getElementById('fillVietnamesePrompt').textContent = item.vi;
+            document.getElementById('fillGrammarHint').textContent = item.grammar;
+            document.getElementById('fillGlosbeLink').href = getGlosbeUrl(item);
+
+            const inputEl = document.getElementById('fillTextInput');
+            const artSelector = document.getElementById('fillArticleSelector');
+            const clozeBox = document.getElementById('fillClozeMask');
+            inputEl.value = '';
+            inputEl.disabled = false;
+            document.getElementById('fillFeedbackBox').classList.add('hidden');
+            document.getElementById('fillSubmitBtn').textContent = 'Kiểm tra đáp án';
+            document.querySelectorAll('.art-pill').forEach(b => b.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-100'));
+
+            if (mode === 'split') {
+                artSelector.classList.remove('hidden');
+                clozeBox.classList.add('hidden');
+                inputEl.placeholder = 'Gõ từ (VD: Gürtel)...';
+            } else if (mode === 'cloze') {
+                artSelector.classList.add('hidden');
+                clozeBox.classList.remove('hidden');
+                clozeBox.textContent = item.full.split('').map((c, i) => (c === ' ' || i === 0 || i % 2 === 0) ? c : '_').join('');
+                inputEl.placeholder = 'Điền từ hoàn chỉnh...';
+            } else {
+                artSelector.classList.add('hidden');
+                clozeBox.classList.add('hidden');
+                inputEl.placeholder = 'Gõ Mạo từ + Từ (VD: der Gürtel)...';
+            }
+
+            if (autoSpeak) setTimeout(() => speakGerman(item.full, document.getElementById('fillSpeakerBtn')), 120);
+            inputEl.focus();
+        }
+
+        function insertGermanChar(inputId, char) {
+            const inputEl = document.getElementById(inputId);
+            if (!inputEl || inputEl.disabled) return;
+            const s = inputEl.selectionStart || inputEl.value.length;
+            const e = inputEl.selectionEnd || inputEl.value.length;
+            inputEl.value = inputEl.value.substring(0, s) + char + inputEl.value.substring(e);
+            inputEl.focus();
+            inputEl.setSelectionRange(s + 1, s + 1);
+        }
+
+        function speakCurrentFillWord(btn = null) {
+            if (fillDeck[fillIndex]) speakGerman(fillDeck[fillIndex].full, btn);
+        }
+
+        function giveFillHint() {
+            const item = fillDeck[fillIndex];
+            const mode = document.getElementById('fillModeSelect').value;
+            const target = mode === 'split' ? item.word : item.full;
+            if (mode === 'split' && !selectedFillArticle) selectFillArticle(item.article || 'none');
+            fillHintStep = Math.min(target.length, fillHintStep + 1);
+            document.getElementById('fillTextInput').value = target.substring(0, fillHintStep);
+            document.getElementById('fillTextInput').focus();
+        }
+
+        function checkFillAnswer() {
+            if (fillSolvedCurrent) { nextFillWord(); return; }
+            const item = fillDeck[fillIndex];
+            const mode = document.getElementById('fillModeSelect').value;
+            const inputEl = document.getElementById('fillTextInput');
+            const userRaw = inputEl.value.trim().replace(/\s+/g, ' ');
+            const feedbackBox = document.getElementById('fillFeedbackBox');
+
+            let isCorrect = false;
+            if (mode === 'split') {
+                isCorrect = (selectedFillArticle === (item.article || 'none')) && (userRaw.toLowerCase() === item.word.toLowerCase());
+            } else {
+                isCorrect = userRaw.toLowerCase() === item.full.toLowerCase();
+            }
+
+            speakGerman(item.full);
+
+            if (isCorrect) {
+                playSoundEffect('correct');
+                fillSolvedCurrent = true;
+                fillMasteredIds.add(item.id);
+                document.getElementById('fillMasteredCount').textContent = fillMasteredIds.size;
+                inputEl.disabled = true;
+                feedbackBox.className = 'rounded-2xl p-4 text-center bg-emerald-100 text-emerald-900 border border-emerald-300 animate-pop';
+                feedbackBox.innerHTML = `<p class="font-black">🎉 Chính xác! <strong>${item.full}</strong> = ${item.vi}</p>`;
+                feedbackBox.classList.remove('hidden');
+                document.getElementById('fillSubmitBtn').textContent = 'Câu tiếp theo ➡️';
+            } else {
+                playSoundEffect('wrong');
+                inputEl.classList.add('animate-shake');
+                setTimeout(() => inputEl.classList.remove('animate-shake'), 380);
+                feedbackBox.className = 'rounded-2xl p-4 text-center bg-rose-100 text-rose-900 border border-rose-300 animate-pop';
+                feedbackBox.innerHTML = `<p class="font-extrabold text-sm">❌ Chưa đúng! Đáp án chuẩn: <strong>${item.full}</strong> — Hãy gõ lại để ghi nhớ nhé!</p>`;
+                feedbackBox.classList.remove('hidden');
+            }
+        }
+
+        function nextFillWord() {
+            fillIndex = (fillIndex + 1) % fillDeck.length;
+            renderFillQuestion();
+        }
+
+        // ==========================================
+        // 8. TAB 4: NGHE & VIẾT CHÍNH TẢ (DICTATION)
+        // ==========================================
+        let dictDeck = [], dictIndex = 0, dictSolved = false;
+
+        function initDictationExercise() {
+            dictDeck = shuffleArray(VOCAB_DATA);
+            dictIndex = 0;
+            renderDictationQuestion();
+        }
+
+        function renderDictationQuestion() {
+            const item = dictDeck[dictIndex];
+            dictSolved = false;
+            document.getElementById('dictIndexDisplay').textContent = dictIndex + 1;
+            document.getElementById('dictTotalDisplay').textContent = dictDeck.length;
+            document.getElementById('dictGlosbeLink').href = getGlosbeUrl(item);
+
+            const inputEl = document.getElementById('dictTextInput');
+            inputEl.value = '';
+            inputEl.disabled = false;
+            document.getElementById('dictFeedbackBox').classList.add('hidden');
+            document.getElementById('dictMeaningReveal').classList.add('hidden');
+            document.getElementById('dictMeaningReveal').textContent = `${item.emoji} ${item.vi}`;
+            document.getElementById('dictSubmitBtn').textContent = 'Kiểm tra chính tả';
+
+            if (autoSpeak) setTimeout(() => speakGerman(item.full, document.getElementById('dictNormalSpeakBtn')), 150);
+            inputEl.focus();
+        }
+
+        function speakDictationWord(rate, btn) {
+            const item = dictDeck[dictIndex];
+            if (item) speakGerman(item.full, btn, rate);
+        }
+
+        function toggleDictationMeaningHint() {
+            document.getElementById('dictMeaningReveal').classList.toggle('hidden');
+        }
+
+        function checkDictationAnswer() {
+            if (dictSolved) { nextDictationWord(); return; }
+            const item = dictDeck[dictIndex];
+            const inputEl = document.getElementById('dictTextInput');
+            const userVal = inputEl.value.trim().replace(/\s+/g, ' ');
+            const feedbackBox = document.getElementById('dictFeedbackBox');
+
+            if (userVal.toLowerCase() === item.full.toLowerCase()) {
+                playSoundEffect('correct');
+                dictSolved = true;
+                inputEl.disabled = true;
+                feedbackBox.className = 'rounded-2xl p-4 text-center bg-emerald-100 text-emerald-900 border border-emerald-300 animate-pop';
+                feedbackBox.innerHTML = `<p class="font-black">🎉 Chuẩn xác! <strong>${item.full}</strong> (${item.vi})</p>`;
+                feedbackBox.classList.remove('hidden');
+                document.getElementById('dictSubmitBtn').textContent = 'Từ tiếp theo ➡️';
+            } else {
+                playSoundEffect('wrong');
+                speakGerman(item.full);
+                feedbackBox.className = 'rounded-2xl p-4 text-center bg-rose-100 text-rose-900 border border-rose-300 animate-pop';
+                feedbackBox.innerHTML = `<p class="font-extrabold text-sm">❌ Chưa khớp! Từ đúng là: <strong>${item.full}</strong> (${item.vi}) — Gõ lại để nhớ nhé!</p>`;
+                feedbackBox.classList.remove('hidden');
+            }
+        }
+
+        function nextDictationWord() {
+            dictIndex = (dictIndex + 1) % dictDeck.length;
+            renderDictationQuestion();
+        }
+
+        // ==========================================
+        // 9. TAB 5: GAME 1 - ĐUA XE CAO TỐC 3 LÀN
+        // ==========================================
+        const raceCanvas = document.getElementById('raceCanvas');
+        const rCtx = raceCanvas.getContext('2d');
+        let raceAnimFrame = null;
+
+        const ROAD_OBSTACLES = [
+            { name: 'Rào chắn công trường', kind: 'barrier' },
+            { name: 'Xe tải chắn đường', kind: 'truck' },
+            { name: 'Tảng đá sạt lở', kind: 'rock' },
+            { name: 'Hố sâu cảnh báo', kind: 'pit' }
+        ];
+
+        let raceState = {
+            isRunning: false,
+            score: 0,
+            meters: 0,
+            passedCount: 0,
+            completedCount: 0,
+            baseSpeed: 2.1,
+            currentSpeed: 2.1,
+            nitroTimer: 0,
+            crashTimer: 0,
+            roadOffset: 0,
+            carLane: 1,
+            carY: 110,
+            carX: 90,
+            obstacleLane: 1,
+            obstacleX: 800,
+            obstacleStartX: 800,
+            obstacleType: ROAD_OBSTACLES[0],
+            answeredCurrent: false,
+            deck: [],
+            currentWord: null,
+            options: [],
+            crashedWords: []
+        };
+
+        function resizeRaceCanvas() {
+            if (!raceCanvas) return;
+            const rect = raceCanvas.parentElement.getBoundingClientRect();
+            raceCanvas.width = rect.width || 800;
+            raceCanvas.height = rect.height || 230;
+            raceState.carY = getLaneCenterY(raceState.carLane);
+        }
+
+        function getLaneCenterY(lane) {
+            const grass = 30;
+            const laneH = (raceCanvas.height - grass * 2) / 3;
+            return grass + laneH * (lane + 0.5);
+        }
+
+        window.addEventListener('keydown', e => {
+            if (!raceState.isRunning || raceState.answeredCurrent) return;
+            if (['1', '2', '3', '4'].includes(e.key)) {
+                const idx = parseInt(e.key, 10) - 1;
+                if (raceState.options[idx]) handleRaceAnswer(idx);
+            }
+        });
+
+        function startRaceGame() {
+            initAudioContext();
+            const speedChoice = document.getElementById('raceSpeedLevel').value;
+            let spd = speedChoice === 'slow' ? 1.4 : speedChoice === 'fast' ? 2.8 : 2.05;
+
+            document.getElementById('raceSetupCard').classList.add('hidden');
+            document.getElementById('raceResultCard').classList.add('hidden');
+            document.getElementById('racePlayContainer').classList.remove('hidden');
+
+            resizeRaceCanvas();
+
+            raceState.isRunning = true;
+            raceState.score = 0;
+            raceState.meters = 0;
+            raceState.passedCount = 0;
+            raceState.completedCount = 0;
+            raceState.baseSpeed = spd;
+            raceState.currentSpeed = spd;
+            raceState.nitroTimer = 0;
+            raceState.crashTimer = 0;
+            raceState.carLane = 1;
+            raceState.carY = getLaneCenterY(1);
+            raceState.carX = Math.min(90, raceCanvas.width * 0.16);
+            raceState.deck = shuffleArray(VOCAB_DATA);
+            raceState.crashedWords = [];
+
+            updateRaceHUD();
+            spawnNextRaceObstacle();
+
+            if (raceAnimFrame) cancelAnimationFrame(raceAnimFrame);
+            raceLoop();
+        }
+
+        function spawnNextRaceObstacle() {
+            if (raceState.deck.length === 0) {
+                endRaceGame();
+                return;
+            }
+            const wordObj = raceState.deck.pop();
+            const distractors = shuffleArray(VOCAB_DATA.filter(w => w.id !== wordObj.id)).slice(0, 3);
+            const options = shuffleArray([wordObj, ...distractors]);
+
+            raceState.currentWord = wordObj;
+            raceState.options = options;
+            raceState.answeredCurrent = false;
+            raceState.obstacleType = ROAD_OBSTACLES[Math.floor(Math.random() * ROAD_OBSTACLES.length)];
+            raceState.obstacleLane = raceState.carLane;
+            raceState.obstacleStartX = raceCanvas.width + 50;
+            raceState.obstacleX = raceState.obstacleStartX;
+
+            document.getElementById('raceObstacleTag').textContent = `⚠️ ${raceState.obstacleType.name}`;
+            document.getElementById('raceWordDisplay').textContent = wordObj.full;
+            document.getElementById('raceGrammarHint').textContent = wordObj.grammar;
+            document.getElementById('raceGlosbeLink').href = getGlosbeUrl(wordObj);
+
+            document.getElementById('raceOptionsGrid').innerHTML = options.map((opt, idx) => `
+                <button id="rOptBtn-${idx}" onclick="handleRaceAnswer(${idx})" class="p-3.5 rounded-2xl bg-slate-50 hover:bg-indigo-50 border-2 border-slate-200 hover:border-indigo-400 text-left font-bold text-slate-800 text-sm sm:text-base transition-all flex items-center gap-3">
+                    <span class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-600 text-xs font-black flex items-center justify-center shrink-0">${idx + 1}</span>
+                    <span>${opt.vi}</span>
+                </button>
+            `).join('');
+
+            if (autoSpeak) setTimeout(() => { if (raceState.isRunning) speakGerman(wordObj.full, document.getElementById('raceSpeakerBtn')); }, 120);
+        }
+
+        function speakCurrentRaceWord(btn = null) {
+            if (raceState.currentWord) speakGerman(raceState.currentWord.full, btn);
+        }
+
+        function showRaceAlert(text, bgClass) {
+            const el = document.getElementById('raceFloatingAlert');
+            el.textContent = text;
+            el.className = `pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full font-extrabold text-xs sm:text-sm shadow-lg transition-opacity duration-200 whitespace-nowrap ${bgClass} opacity-100`;
+            setTimeout(() => { el.classList.remove('opacity-100'); el.classList.add('opacity-0'); }, 1150);
+        }
+
+        function handleRaceAnswer(idx) {
+            if (!raceState.isRunning || raceState.answeredCurrent) return;
+            raceState.answeredCurrent = true;
+            raceState.completedCount++;
+
+            const isCorrect = raceState.options[idx].id === raceState.currentWord.id;
+            const correctIdx = raceState.options.findIndex(o => o.id === raceState.currentWord.id);
+
+            if (isCorrect) {
+                playSoundEffect('correct');
+                document.getElementById(`rOptBtn-${idx}`).className = 'p-3.5 rounded-2xl bg-emerald-100 border-2 border-emerald-500 text-left font-bold text-emerald-900 flex items-center gap-3';
+                const otherLanes = [0, 1, 2].filter(l => l !== raceState.obstacleLane);
+                raceState.carLane = otherLanes[Math.floor(Math.random() * otherLanes.length)];
+                raceState.nitroTimer = 38;
+                raceState.score += 150;
+                raceState.passedCount++;
+                showRaceAlert('⚡ Đánh lái né thành công + Nitro! +150', 'bg-emerald-500 text-white');
+            } else {
+                playSoundEffect('wrong');
+                document.getElementById(`rOptBtn-${idx}`).className = 'p-3.5 rounded-2xl bg-rose-100 border-2 border-rose-500 text-left font-bold text-rose-900 flex items-center gap-3 animate-shake';
+                document.getElementById(`rOptBtn-${correctIdx}`).className = 'p-3.5 rounded-2xl bg-emerald-100 border-2 border-emerald-500 text-left font-bold text-emerald-900 flex items-center gap-3';
+                speakGerman(raceState.currentWord.full);
+                raceState.crashTimer = 30;
+                raceState.score = Math.max(0, raceState.score - 30);
+                raceState.crashedWords.push(raceState.currentWord);
+                showRaceAlert(`💥 Va chạm! Đáp án: ${raceState.currentWord.vi} (Tiếp tục đua!)`, 'bg-rose-600 text-white');
+            }
+            updateRaceHUD();
+        }
+
+        function updateRaceHUD() {
+            const total = VOCAB_DATA.length;
+            document.getElementById('raceCurrentNum').textContent = Math.min(total, raceState.completedCount + 1);
+            document.getElementById('raceTotalNum').textContent = total;
+            document.getElementById('raceScoreDisplay').textContent = raceState.score;
+            document.getElementById('raceProgressBar').style.width = `${(raceState.completedCount / total) * 100}%`;
+        }
+
+        function raceLoop() {
+            if (!raceState.isRunning) return;
+
+            const spd = raceState.nitroTimer > 0 ? raceState.currentSpeed * 2.4 : raceState.answeredCurrent ? raceState.currentSpeed * 2.0 : raceState.currentSpeed;
+            if (raceState.nitroTimer > 0) raceState.nitroTimer--;
+            if (raceState.crashTimer > 0) raceState.crashTimer--;
+
+            raceState.meters += spd * 0.14;
+            raceState.roadOffset = (raceState.roadOffset + spd * 2.3) % 70;
+            document.getElementById('raceMetersDisplay').textContent = Math.floor(raceState.meters);
+
+            const targetY = getLaneCenterY(raceState.carLane);
+            raceState.carY += (targetY - raceState.carY) * 0.18;
+            raceState.obstacleX -= spd;
+
+            const totalDist = raceState.obstacleStartX - (raceState.carX + 34);
+            const remDist = Math.max(0, raceState.obstacleX - (raceState.carX + 34));
+            const pct = Math.min(100, Math.max(0, (remDist / totalDist) * 100));
+            const bar = document.getElementById('raceSafetyBar');
+            if (bar) {
+                bar.style.width = `${pct}%`;
+                bar.className = pct > 45 ? 'h-full bg-emerald-500 rounded-full' : pct > 20 ? 'h-full bg-amber-500 rounded-full' : 'h-full bg-rose-500 rounded-full';
+            }
+
+            if (!raceState.answeredCurrent && raceState.obstacleX <= raceState.carX + 34) {
+                raceState.answeredCurrent = true;
+                raceState.completedCount++;
+                playSoundEffect('wrong');
+                speakGerman(raceState.currentWord.full);
+                const correctIdx = raceState.options.findIndex(o => o.id === raceState.currentWord.id);
+                const cBtn = document.getElementById(`rOptBtn-${correctIdx}`);
+                if (cBtn) cBtn.className = 'p-3.5 rounded-2xl bg-emerald-100 border-2 border-emerald-500 text-left font-bold text-emerald-900 flex items-center gap-3';
+                raceState.crashTimer = 30;
+                raceState.score = Math.max(0, raceState.score - 30);
+                raceState.crashedWords.push(raceState.currentWord);
+                showRaceAlert(`💥 Đụng rào chắn! Đáp án: ${raceState.currentWord.vi}`, 'bg-rose-600 text-white');
+                updateRaceHUD();
+            }
+
+            if (raceState.obstacleX < -60) {
+                spawnNextRaceObstacle();
+            }
+
+            drawRaceCanvas();
+            raceAnimFrame = requestAnimationFrame(raceLoop);
+        }
+
+        function drawRaceCanvas() {
+            const w = raceCanvas.width, h = raceCanvas.height, grass = 30, roadH = h - grass * 2, laneH = roadH / 3;
+            rCtx.fillStyle = '#16a34a';
+            rCtx.fillRect(0, 0, w, grass);
+            rCtx.fillRect(0, h - grass, w, grass);
+
+            rCtx.fillStyle = '#334155';
+            rCtx.fillRect(0, grass, w, roadH);
+
+            rCtx.fillStyle = 'rgba(255,255,255,0.75)';
+            for (let lane = 1; lane <= 2; lane++) {
+                const y = grass + lane * laneH - 2;
+                for (let x = -raceState.roadOffset; x < w; x += 70) rCtx.fillRect(x, y, 36, 4);
+            }
+
+            const oy = getLaneCenterY(raceState.obstacleLane);
+            rCtx.save();
+            rCtx.translate(raceState.obstacleX, oy);
+            if (raceState.obstacleType.kind === 'truck') {
+                rCtx.fillStyle = '#2563eb';
+                rCtx.beginPath(); rCtx.roundRect(-24, -15, 36, 30, 4); rCtx.fill();
+                rCtx.fillStyle = '#93c5fd';
+                rCtx.beginPath(); rCtx.roundRect(12, -12, 13, 24, 4); rCtx.fill();
+            } else if (raceState.obstacleType.kind === 'rock') {
+                rCtx.fillStyle = '#64748b';
+                rCtx.beginPath(); rCtx.arc(0, 0, 18, 0, Math.PI * 2); rCtx.fill();
+            } else if (raceState.obstacleType.kind === 'pit') {
+                rCtx.fillStyle = '#0f172a';
+                rCtx.beginPath(); rCtx.ellipse(0, 0, 22, 13, 0, 0, Math.PI * 2); rCtx.fill();
+            } else {
+                rCtx.fillStyle = '#f97316';
+                rCtx.beginPath(); rCtx.roundRect(-12, -18, 24, 36, 4); rCtx.fill();
+                rCtx.fillStyle = '#ffffff';
+                rCtx.fillRect(-8, -10, 16, 5); rCtx.fillRect(-8, 6, 16, 5);
+            }
+            rCtx.restore();
+
+            rCtx.save();
+            rCtx.translate(raceState.carX, raceState.carY);
+            if (raceState.crashTimer > 0 && Math.floor(raceState.crashTimer / 4) % 2 === 0) rCtx.globalAlpha = 0.45;
+            if (raceState.nitroTimer > 0) {
+                rCtx.fillStyle = '#38bdf8';
+                rCtx.beginPath(); rCtx.moveTo(-25, -7); rCtx.lineTo(-48, 0); rCtx.lineTo(-25, 7); rCtx.fill();
+            }
+            rCtx.fillStyle = '#e11d48';
+            rCtx.beginPath(); rCtx.roundRect(-24, -13, 48, 26, 7); rCtx.fill();
+            rCtx.fillStyle = '#fbbf24';
+            rCtx.fillRect(-18, -3, 38, 6);
+            rCtx.fillStyle = '#1e293b';
+            rCtx.beginPath(); rCtx.roundRect(2, -9, 12, 18, 3); rCtx.fill();
+            rCtx.restore();
+        }
+
+        function endRaceGame() {
+            raceState.isRunning = false;
+            if (raceAnimFrame) cancelAnimationFrame(raceAnimFrame);
+            playSoundEffect('win');
+
+            document.getElementById('racePlayContainer').classList.add('hidden');
+            document.getElementById('raceResultCard').classList.remove('hidden');
+            document.getElementById('raceEndScore').textContent = raceState.score;
+            document.getElementById('raceEndPassed').textContent = `${raceState.passedCount}/${VOCAB_DATA.length}`;
+            document.getElementById('raceEndMeters').textContent = `${Math.floor(raceState.meters)} m`;
+
+            const reviewBox = document.getElementById('raceCrashReviewBox');
+            const reviewList = document.getElementById('raceCrashReviewList');
+            if (raceState.crashedWords.length > 0) {
+                reviewBox.classList.remove('hidden');
+                const unique = Array.from(new Map(raceState.crashedWords.map(w => [w.id, w])).values());
+                reviewList.innerHTML = unique.map(w => `
+                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs sm:text-sm">
+                        <div><strong>${w.full}</strong> — <span class="text-rose-700 font-bold">${w.vi}</span></div>
+                        <button onclick="speakGerman('${w.full.replace(/'/g, "\\'")}', this)" class="px-2.5 py-1 rounded bg-white border border-indigo-200 text-indigo-600 font-bold">🔊</button>
+                    </div>
+                `).join('');
+            } else {
+                reviewBox.classList.add('hidden');
+            }
+        }
+
+        function quitRaceGame() {
+            raceState.isRunning = false;
+            if (raceAnimFrame) cancelAnimationFrame(raceAnimFrame);
+            document.getElementById('racePlayContainer').classList.add('hidden');
+            document.getElementById('raceSetupCard').classList.remove('hidden');
+        }
+
+        // ==========================================
+        // 10. TAB 6: GAME 2 - ĐẬP CHUỘT TỪ VỰNG (WHACK-A-MOLE)
+        // ==========================================
+        let moleDeck = [], moleIndex = 0, moleScore = 0, moleHolesData = [], moleInterval = null, moleLocked = false;
+
+        function initMoleGame() {
+            moleDeck = shuffleArray(VOCAB_DATA);
+            moleIndex = 0;
+            moleScore = 0;
+            document.getElementById('moleScoreDisplay').textContent = 0;
+            document.getElementById('moleTotalDisplay').textContent = moleDeck.length;
+            setupNextMoleRound();
+        }
+
+        function setupNextMoleRound() {
+            if (moleIndex >= moleDeck.length) {
+                playSoundEffect('win');
+                document.getElementById('moleStatusBanner').innerHTML = `🏆 Xuất sắc! Bạn đã hoàn thành toàn bộ ${moleDeck.length} từ với ${moleScore} điểm!`;
+                document.getElementById('moleGrid').innerHTML = `
+                    <div class="col-span-full text-center py-8 space-y-3">
+                        <div class="text-5xl">🎉🐹🏆</div>
+                        <p class="font-black text-lg text-slate-900">Hoàn thành trọn bộ Đập Chuột Từ Vựng!</p>
+                        <button onclick="initMoleGame()" class="px-6 py-3 rounded-2xl bg-indigo-600 text-white font-extrabold shadow-md">🔄 Chơi lại từ đầu</button>
+                    </div>
+                `;
+                return;
+            }
+
+            moleLocked = false;
+            const target = moleDeck[moleIndex];
+            document.getElementById('moleIndexDisplay').textContent = moleIndex + 1;
+            document.getElementById('moleTargetWord').textContent = target.full;
+            document.getElementById('moleGlosbeLink').href = getGlosbeUrl(target);
+            document.getElementById('moleStatusBanner').textContent = '👆 Đập trúng chú chuột mang nghĩa tiếng Việt đúng!';
+
+            if (autoSpeak) setTimeout(() => speakGerman(target.full, document.getElementById('moleSpeakerBtn')), 120);
+
+            spawnMoleWave();
+            if (moleInterval) clearInterval(moleInterval);
+            moleInterval = setInterval(() => {
+                if (!moleLocked) spawnMoleWave();
+            }, 3400);
+        }
+
+        function speakCurrentMoleWord(btn = null) {
+            if (moleDeck[moleIndex]) speakGerman(moleDeck[moleIndex].full, btn);
+        }
+
+        function spawnMoleWave() {
+            const target = moleDeck[moleIndex];
+            if (!target) return;
+            const distractors = shuffleArray(VOCAB_DATA.filter(w => w.id !== target.id)).slice(0, 3);
+            const candidates = shuffleArray([target, ...distractors]);
+
+            const holeIndices = shuffleArray([0, 1, 2, 3, 4, 5]).slice(0, 4);
+            moleHolesData = Array(6).fill(null);
+            holeIndices.forEach((hIdx, i) => { moleHolesData[hIdx] = candidates[i]; });
+
+            const grid = document.getElementById('moleGrid');
+            grid.innerHTML = moleHolesData.map((wordItem, idx) => {
+                if (!wordItem) {
+                    return `
+                        <div class="h-28 rounded-2xl bg-emerald-800/20 border-2 border-emerald-700/20 flex items-end justify-center p-2">
+                            <div class="w-20 h-5 rounded-full bg-emerald-950/40"></div>
+                        </div>
+                    `;
+                }
+                return `
+                    <button onclick="whackMole(${idx})" class="h-28 rounded-2xl bg-emerald-800/20 border-2 border-emerald-700/30 flex flex-col items-center justify-end p-2 relative overflow-hidden active:scale-95 transition-transform">
+                        <div class="mole-up w-full bg-amber-100 hover:bg-amber-200 border-2 border-amber-500 rounded-2xl p-2 shadow-md flex flex-col items-center justify-center z-10">
+                            <span class="text-2xl leading-none">🐹</span>
+                            <span class="text-xs sm:text-sm font-black text-slate-900 mt-1 line-clamp-2 text-center">${wordItem.vi}</span>
+                        </div>
+                        <div class="w-24 h-3 rounded-full bg-emerald-950/50 -mt-1"></div>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function whackMole(holeIdx) {
+            if (moleLocked) return;
+            const clickedWord = moleHolesData[holeIdx];
+            if (!clickedWord) return;
+
+            const target = moleDeck[moleIndex];
+            moleLocked = true;
+            clearInterval(moleInterval);
+
+            if (clickedWord.id === target.id) {
+                playSoundEffect('correct');
+                moleScore += 100;
+                document.getElementById('moleScoreDisplay').textContent = moleScore;
+                document.getElementById('moleStatusBanner').innerHTML = `<span class="text-emerald-600">💥 Bốp! Chính xác: ${target.full} = ${target.vi} (+100)</span>`;
+            } else {
+                playSoundEffect('wrong');
+                speakGerman(target.full);
+                document.getElementById('moleStatusBanner').innerHTML = `<span class="text-rose-600">❌ Đập nhầm "${clickedWord.vi}"! Đáp án đúng: ${target.vi}</span>`;
+            }
+
+            setTimeout(() => {
+                moleIndex++;
+                setupNextMoleRound();
+            }, 1150);
+        }
+
+        // ==========================================
+        // 11. TAB 7: GAME 3 - LẬT HÌNH TÌM CẶP (MEMORY MATCH)
+        // ==========================================
+        let memChunks = [], memChunkIndex = 0, memMatchedTotal = 0, memFlipped = [], memMatchedInRound = 0, memLock = false;
+
+        function initMemoryGame() {
+            const shuffled = shuffleArray(VOCAB_DATA);
+            memChunks = [];
+            for (let i = 0; i < shuffled.length; i += 6) {
+                memChunks.push(shuffled.slice(i, i + 6));
+            }
+            memChunkIndex = 0;
+            memMatchedTotal = 0;
+            document.getElementById('memDeckTotal').textContent = VOCAB_DATA.length;
+            document.getElementById('memTotalRoundsDisplay').textContent = memChunks.length;
+            renderMemoryRound();
+        }
+
+        function renderMemoryRound() {
+            const currentGroup = memChunks[memChunkIndex];
+            if (!currentGroup) {
+                playSoundEffect('win');
+                document.getElementById('memoryBoard').innerHTML = `
+                    <div class="col-span-full text-center py-10 space-y-3">
+                        <div class="text-5xl">🃏🏆🎉</div>
+                        <h3 class="text-2xl font-black text-slate-900">Hoàn thành ghép cặp toàn bộ ${VOCAB_DATA.length} từ!</h3>
+                        <button onclick="initMemoryGame()" class="px-6 py-3 rounded-2xl bg-indigo-600 text-white font-extrabold shadow-md">🔄 Chơi lại từ đầu</button>
+                    </div>
+                `;
+                return;
+            }
+
+            memFlipped = [];
+            memMatchedInRound = 0;
+            memLock = false;
+
+            document.getElementById('memRoundDisplay').textContent = memChunkIndex + 1;
+            document.getElementById('memMatchedTotal').textContent = memMatchedTotal;
+
+            const cards = [];
+            currentGroup.forEach(item => {
+                cards.push({ uid: `de-${item.id}`, pairId: item.id, side: 'de', text: item.full, wordObj: item });
+                cards.push({ uid: `vi-${item.id}`, pairId: item.id, side: 'vi', text: `${item.emoji} ${item.vi}`, wordObj: item });
+            });
+
+            const deck = shuffleArray(cards);
+            document.getElementById('memoryBoard').innerHTML = deck.map((c, idx) => `
+                <button id="memCard-${idx}" data-pair="${c.pairId}" data-side="${c.side}" data-text="${c.text.replace(/"/g, '&quot;')}" data-full="${c.wordObj.full.replace(/"/g, '&quot;')}"
+                    onclick="flipMemoryCard(${idx})"
+                    class="h-24 sm:h-28 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-700 text-white font-black text-sm sm:text-base p-3 shadow-md flex items-center justify-center text-center transition-all active:scale-95">
+                    <span class="text-2xl">❓</span>
+                </button>
+            `).join('');
+        }
+
+        function flipMemoryCard(idx) {
+            if (memLock) return;
+            const btn = document.getElementById(`memCard-${idx}`);
+            if (!btn || btn.dataset.matched === '1' || memFlipped.includes(idx)) return;
+
+            const side = btn.dataset.side;
+            const text = btn.dataset.text;
+            const fullDe = btn.dataset.full;
+
+            if (side === 'de') speakGerman(fullDe);
+
+            btn.className = side === 'de'
+                ? 'h-24 sm:h-28 rounded-2xl bg-white border-2 border-indigo-500 text-indigo-900 font-black text-sm sm:text-base p-3 shadow-sm flex items-center justify-center text-center'
+                : 'h-24 sm:h-28 rounded-2xl bg-amber-50 border-2 border-amber-500 text-amber-950 font-extrabold text-sm sm:text-base p-3 shadow-sm flex items-center justify-center text-center';
+            btn.innerHTML = `<span>${text}</span>`;
+
+            memFlipped.push(idx);
+
+            if (memFlipped.length === 2) {
+                memLock = true;
+                const [i1, i2] = memFlipped;
+                const c1 = document.getElementById(`memCard-${i1}`);
+                const c2 = document.getElementById(`memCard-${i2}`);
+
+                if (c1.dataset.pair === c2.dataset.pair && c1.dataset.side !== c2.dataset.side) {
+                    playSoundEffect('correct');
+                    c1.dataset.matched = '1';
+                    c2.dataset.matched = '1';
+                    c1.className = 'h-24 sm:h-28 rounded-2xl bg-emerald-100 border-2 border-emerald-500 text-emerald-900 font-black text-sm p-3 flex items-center justify-center text-center opacity-80';
+                    c2.className = 'h-24 sm:h-28 rounded-2xl bg-emerald-100 border-2 border-emerald-500 text-emerald-900 font-black text-sm p-3 flex items-center justify-center text-center opacity-80';
+                    memMatchedInRound++;
+                    memMatchedTotal++;
+                    document.getElementById('memMatchedTotal').textContent = memMatchedTotal;
+                    memFlipped = [];
+                    memLock = false;
+
+                    if (memMatchedInRound === memChunks[memChunkIndex].length) {
+                        setTimeout(() => {
+                            memChunkIndex++;
+                            renderMemoryRound();
+                        }, 850);
+                    }
+                } else {
+                    playSoundEffect('wrong');
+                    setTimeout(() => {
+                        [c1, c2].forEach(el => {
+                            el.className = 'h-24 sm:h-28 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-700 text-white font-black text-sm p-3 shadow-md flex items-center justify-center text-center transition-all';
+                            el.innerHTML = `<span class="text-2xl">❓</span>`;
+                        });
+                        memFlipped = [];
+                        memLock = false;
+                    }, 850);
+                }
+            }
+        }
+
+        // ==========================================
+        // 12. TAB 8: GAME 4 - TREO CỔ ĐOÁN CHỮ (HANGMAN)
+        // ==========================================
+        let hangDeck = [], hangIndex = 0, hangScore = 0, hangGuessed = new Set(), hangMistakes = 0, hangRoundOver = false;
+        const GERMAN_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜß'.split('');
+
+        function initHangmanGame() {
+            hangDeck = shuffleArray(VOCAB_DATA);
+            hangIndex = 0;
+            hangScore = 0;
+            document.getElementById('hangScoreDisplay').textContent = 0;
+            document.getElementById('hangTotalDisplay').textContent = hangDeck.length;
+            setupHangmanRound();
+        }
+
+        function setupHangmanRound() {
+            if (hangIndex >= hangDeck.length) {
+                playSoundEffect('win');
+                document.getElementById('hangStatusBanner').className = 'rounded-2xl p-4 text-center font-black bg-emerald-100 text-emerald-900 border border-emerald-300';
+                document.getElementById('hangStatusBanner').innerHTML = `🏆 Chúc mừng! Bạn đã giải cứu qua toàn bộ ${hangDeck.length} từ với ${hangScore} điểm! <button onclick="initHangmanGame()" class="ml-2 underline">Chơi lại</button>`;
+                document.getElementById('hangStatusBanner').classList.remove('hidden');
+                return;
+            }
+
+            const item = hangDeck[hangIndex];
+            hangGuessed = new Set();
+            hangMistakes = 0;
+            hangRoundOver = false;
+
+            document.getElementById('hangIndexDisplay').textContent = hangIndex + 1;
+            document.getElementById('hangMeaningHint').textContent = `${item.emoji} ${item.vi}`;
+            document.getElementById('hangGlosbeLink').href = getGlosbeUrl(item);
+            document.getElementById('hangStatusBanner').classList.add('hidden');
+
+            for (let i = 0; i < 6; i++) document.getElementById(`hm-part-${i}`).classList.add('hidden');
+            document.getElementById('hangLivesLeft').textContent = 6;
+
+            if (autoSpeak) setTimeout(() => speakGerman(item.full, document.getElementById('hangSpeakerBtn')), 120);
+
+            renderHangmanSlots();
+            renderHangmanKeyboard();
+        }
+
+        function speakCurrentHangWord(btn = null) {
+            if (hangDeck[hangIndex]) speakGerman(hangDeck[hangIndex].full, btn);
+        }
+
+        function renderHangmanSlots() {
+            const target = hangDeck[hangIndex].full;
+            const slotsEl = document.getElementById('hangWordSlots');
+            slotsEl.innerHTML = target.split('').map(ch => {
+                if (ch === ' ') return `<span class="w-4"></span>`;
+                if (ch === '-') return `<span class="px-1 text-slate-500">-</span>`;
+                const upper = ch.toUpperCase();
+                const revealed = hangGuessed.has(upper) || hangRoundOver;
+                return `<span class="w-8 h-10 border-b-4 ${revealed ? 'border-indigo-600 text-slate-900' : 'border-slate-400 text-transparent'} flex items-center justify-center bg-white rounded-t-lg shadow-xs">${revealed ? ch : '_'}</span>`;
+            }).join('');
+        }
+
+        function renderHangmanKeyboard() {
+            const kb = document.getElementById('hangKeyboard');
+            kb.innerHTML = GERMAN_ALPHABET.map(letter => {
+                const used = hangGuessed.has(letter);
+                return `
+                    <button onclick="guessHangmanLetter('${letter}')" ${used || hangRoundOver ? 'disabled' : ''}
+                        class="w-9 h-10 sm:w-10 sm:h-11 rounded-xl font-extrabold text-sm border transition-all ${used ? 'bg-slate-200 text-slate-400 border-slate-200 cursor-not-allowed' : 'bg-white hover:bg-indigo-600 text-slate-800 hover:text-white border-slate-300 shadow-xs active:scale-95'}">
+                        ${letter}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function guessHangmanLetter(letter) {
+            if (hangRoundOver || hangGuessed.has(letter)) return;
+            hangGuessed.add(letter);
+
+            const targetUpper = hangDeck[hangIndex].full.toUpperCase();
+            if (targetUpper.includes(letter)) {
+                playSoundEffect('correct');
+            } else {
+                playSoundEffect('wrong');
+                document.getElementById(`hm-part-${hangMistakes}`).classList.remove('hidden');
+                hangMistakes++;
+                document.getElementById('hangLivesLeft').textContent = Math.max(0, 6 - hangMistakes);
+            }
+
+            const allLettersFound = targetUpper.split('').every(ch => ch === ' ' || ch === '-' || hangGuessed.has(ch));
+            const banner = document.getElementById('hangStatusBanner');
+
+            if (allLettersFound) {
+                hangRoundOver = true;
+                hangScore += 120;
+                document.getElementById('hangScoreDisplay').textContent = hangScore;
+                speakGerman(hangDeck[hangIndex].full);
+                banner.className = 'rounded-2xl p-3.5 text-center font-extrabold text-sm bg-emerald-100 text-emerald-900 border border-emerald-300 animate-pop';
+                banner.innerHTML = `🎉 Tuyệt vời! Từ đúng là: <strong>${hangDeck[hangIndex].full}</strong> (+120) <button onclick="nextHangmanWord()" class="ml-3 px-3 py-1 rounded-xl bg-emerald-600 text-white text-xs">Từ tiếp ➡️</button>`;
+                banner.classList.remove('hidden');
+            } else if (hangMistakes >= 6) {
+                hangRoundOver = true;
+                speakGerman(hangDeck[hangIndex].full);
+                banner.className = 'rounded-2xl p-3.5 text-center font-extrabold text-sm bg-rose-100 text-rose-900 border border-rose-300 animate-pop';
+                banner.innerHTML = `💡 Hết lượt đoán! Đáp án là: <strong>${hangDeck[hangIndex].full}</strong> <button onclick="nextHangmanWord()" class="ml-3 px-3 py-1 rounded-xl bg-rose-600 text-white text-xs">Từ tiếp ➡️</button>`;
+                banner.classList.remove('hidden');
+            }
+
+            renderHangmanSlots();
+            renderHangmanKeyboard();
+        }
+
+        function nextHangmanWord() {
+            hangIndex++;
+            setupHangmanRound();
+        }
+
+        // ==========================================
+        // 13. KHỞI TẠO BAN ĐẦU
+        // ==========================================
+        window.addEventListener('DOMContentLoaded', () => {
+            renderStudyList();
+        });
+    </script>
+</body>
+</html>
